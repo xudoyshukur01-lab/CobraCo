@@ -1,0 +1,297 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CobraCo</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/zones.css">
+    <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+
+    <div id="loadingScreen" class="screen active">
+        <div class="loading-content">
+            <h1 class="logo">CobraCo</h1>
+            <div class="spinner"></div>
+            <p id="loadingText">Юкланмоқда...</p>
+        </div>
+    </div>
+
+    <div id="regionScreen" class="screen">
+        <div class="top-bar">
+            <h2>🌍 Регионни танланг</h2>
+        </div>
+        <div class="region-wrap">
+            <p class="region-desc">Рейтингда қатнашиш учун мамлакат ва вилоятни танланг</p>
+            <div class="setting-item">
+                <label>🏳️ Мамлакат:</label>
+                <select id="countrySelect" class="region-select"></select>
+            </div>
+            <div class="setting-item">
+                <label>📍 Вилоят / Шаҳар:</label>
+                <select id="regionSelect" class="region-select"></select>
+            </div>
+            <button id="regionSaveBtn" class="big-btn">✅ Сақлаш ва бошлаш</button>
+        </div>
+    </div>
+
+    <div id="groupsScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="groupsBackBtn">←</button>
+            <h2>👥 Гуруҳ</h2>
+        </div>
+
+        <div id="groupMenu" class="group-menu">
+            <p class="region-desc">Дўстларингиз билан битта картада ўйнанг!</p>
+            <button id="createGroupBtn" class="big-btn">➕ Янги гуруҳ яратиш</button>
+            <div class="or-divider"><span>ёки</span></div>
+            <button id="joinGroupBtn" class="big-btn" style="background: linear-gradient(135deg, #22d3ee, #3b82f6);">🔗 Код орқали қўшилиш</button>
+        </div>
+
+        <div id="groupRoom" class="group-room" style="display:none;">
+            <div class="group-code-box">
+                <div class="group-code-label">Гуруҳ коди:</div>
+                <div class="group-code-value" id="groupCodeDisplay">------</div>
+            </div>
+
+            <h3 class="group-section-title">👥 Аъзолар</h3>
+            <div id="groupMembers" class="group-members-list"></div>
+
+            <h3 class="group-section-title">📊 Гуруҳ рейтинги</h3>
+            <div id="groupRatingList" class="group-rating-list"></div>
+
+            <button id="groupStartBtn" class="big-btn" style="margin-top:20px;">🎮 Ўйинни бошлаш</button>
+            <button id="groupLeaveBtn" class="menu-btn" style="width:100%; margin-top:10px; background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4);">🚪 Гуруҳдан чиқиш</button>
+        </div>
+
+        <div id="createModal" class="modal">
+            <div class="modal-content">
+                <h3>➕ Янги гуруҳ</h3>
+                <p>Гуруҳ коди автоматик яратилади</p>
+                <button id="confirmCreateBtn" class="big-btn">✅ Яратиш</button>
+                <button id="cancelCreateBtn" class="menu-btn" style="width:100%; margin-top:8px;">Бекор қилиш</button>
+            </div>
+        </div>
+
+        <div id="joinModal" class="modal">
+            <div class="modal-content">
+                <h3>🔗 Гуруҳга қўшилиш</h3>
+                <input type="text" id="joinCodeInput" class="region-select" placeholder="ABCD12" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px; text-transform:uppercase;">
+                <button id="confirmJoinBtn" class="big-btn" style="margin-top:15px;">✅ Қўшилиш</button>
+                <button id="cancelJoinBtn" class="menu-btn" style="width:100%; margin-top:8px;">Бекор қилиш</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="zonesScreen" class="screen">
+        <div class="zones-header">
+            <div class="user-info">
+                <span id="userName">Фойдаланувчи</span>
+                <span id="userId" class="user-id"></span>
+            </div>
+
+            <div class="stats-row">
+                <div class="trophy-display" id="trophyCard">
+                    <span id="trophyIcon">🥉</span>
+                    <span id="trophyCount">0</span>
+                    <span id="trophyRank" class="rank-name">Бронза</span>
+                </div>
+                <div class="crystal-display" id="crystalCard">
+                    <span>💎</span>
+                    <span id="crystalsCount">0</span>
+                </div>
+            </div>
+
+            <div class="user-region" id="userRegion"></div>
+            <h2>Зонани танланг</h2>
+        </div>        <div class="snake-preview-wrap">
+            <div class="snake-preview-label">🐍 Сизнинг илонингиз</div>
+            <canvas id="skinPreviewCanvas" width="300" height="70" class="snake-preview-canvas"></canvas>
+            <button id="skinChangeBtn" class="skin-change-btn">🎨 Скинни ўзгартириш</button>
+        </div>
+
+        <div id="zonesList" class="zones-list"></div>
+        <div class="zones-footer">
+            <p>Умумий рекорд: <span id="bestScore">0</span></p>
+            <div class="menu-buttons">
+                <button id="groupsBtn" class="menu-btn">👥 Гуруҳ</button>
+                <button id="championshipBtn" class="menu-btn">🏆 Чемпионат</button>
+                <button id="settingsBtn" class="menu-btn">⚙️ Созламалар</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="settingsBackBtn">←</button>
+            <h2>⚙️ Созламалар</h2>
+        </div>
+        <div class="settings-wrap">
+            <div class="setting-item">
+                <label>🗺️ Харита ўлчами:</label>
+                <div class="option-selector" id="mapSelector">
+                    <button class="opt-btn" data-map="200">200×200<br><small>Кичик</small></button>
+                    <button class="opt-btn active" data-map="500">500×500<br><small>Ўрта</small></button>
+                    <button class="opt-btn" data-map="1000">1000×1000<br><small>Катта</small></button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>👥 Ботлар сони:</label>
+                <div class="option-selector" id="botsSelector">
+                    <button class="opt-btn" data-bots="0">0</button>
+                    <button class="opt-btn active" data-bots="3">3</button>
+                    <button class="opt-btn" data-bots="5">5</button>
+                    <button class="opt-btn" data-bots="10">10</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>⏱ Ўйин вақти:</label>
+                <div class="option-selector" id="timeSelector">
+                    <button class="opt-btn" data-time="120">2 дақ</button>
+                    <button class="opt-btn active" data-time="180">3 дақ</button>
+                    <button class="opt-btn" data-time="300">5 дақ</button>
+                </div>
+            </div>
+            <div class="setting-item">
+                <label>🌍 Регион:</label>
+                <button id="changeRegionBtn" class="opt-btn" style="width:100%">Регионни ўзгартириш</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ratingScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="ratingBackBtn">←</button>
+            <h2>🏆 Рейтинг</h2>
+        </div>
+        <div class="rating-tabs">
+            <button class="tab-btn active" data-scope="global">🌍 Дунё</button>
+            <button class="tab-btn" data-scope="country">🏳️ Мамлакат</button>
+            <button class="tab-btn" data-scope="region">📍 Вилоят</button>
+        </div>
+        <div class="rating-list" id="ratingList">
+            <div class="rating-loading">Юкланмоқда...</div>
+        </div>
+    </div>
+
+    <div id="championshipScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="championshipBackBtn">←</button>
+            <h2>🏆 Ойнинг чемпионлари</h2>
+        </div>
+        <div class="championship-wrap">
+            <div class="championship-section">
+                <h3>🌍 Дунё — Топ-3</h3>
+                <div id="globalTop3" class="champion-list"></div>
+            </div>
+            <div class="championship-section">
+                <h3>🏳️ Мамлакат — Топ-3</h3>
+                <div id="countryTop3" class="champion-list"></div>
+            </div>
+            <div class="championship-section">
+                <h3>📍 Вилоят — Топ-3</h3>
+                <div id="regionTop3" class="champion-list"></div>
+            </div>
+        </div>
+    </div>        <div id="skinsScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="skinsBackBtn">←</button>
+            <h2>🎨 Скинни таҳрирлаш</h2>
+        </div>
+
+        <p class="skins-desc">Ҳар бир бўғинга алоҳида ранг ва шакл танланг</p>
+
+        <div class="skin-preview-mini">
+            <canvas id="skinPreviewCanvasBig" width="220" height="70"></canvas>
+        </div>
+
+        <div class="preset-row">
+            <button id="presetGreenBtn" class="preset-btn">🟢 Яшил</button>
+            <button id="presetRainbowBtn" class="preset-btn">🌈 Радуга</button>
+            <button id="presetRandomBtn" class="preset-btn">🎲 Тасодифий</button>
+        </div>
+
+        <h3 class="skin-section-title">1️⃣ Бўғинни танланг</h3>
+        <div id="partTabs" class="part-tabs"></div>
+
+        <h3 class="skin-section-title">2️⃣ Рангни танланг</h3>
+        <div id="colorsGrid" class="colors-grid"></div>
+
+        <h3 class="skin-section-title">3️⃣ Шаклни танланг</h3>
+        <div id="shapesGrid" class="shapes-grid"></div>
+
+        <button id="applyAllBtn" class="apply-all-btn">✨ Бу скинни ҳамма бўғинларга қўллаш</button>
+    </div>
+
+
+    <div id="gameScreen" class="screen">
+        <div class="game-header">
+            <button id="backBtn" class="back-btn">←</button>
+            <div class="score-box">Балл: <span id="score">0</span></div>
+            <div class="timer-box">⏱ <span id="timer">3:00</span></div>
+            <div class="respawn-box">❤ <span id="respawn">3</span></div>
+        </div>
+        <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="gameCanvas"></canvas>
+            <canvas id="miniMap" class="mini-map" width="90" height="90"></canvas>
+            <div class="top5-panel" id="top5Panel">
+                <div class="top5-title">🏆 ТОП-5</div>
+                <div class="top5-list" id="top5List"></div>
+            </div>
+            <div class="overlay" id="overlay">
+                <h1 id="overlayTitle">CobraCo</h1>
+                <p id="overlayText">Бошлаш учун тугмани босинг</p>
+                <div class="trophy-result" id="trophyResult"></div>
+                <button id="startBtn">Бошлаш</button>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="btn-up" data-dir="up">⬆️</button>
+            <div class="middle-row">
+                <button class="btn-left" data-dir="left">⬅️</button>
+                <button class="btn-right" data-dir="right">➡️</button>
+            </div>
+            <button class="btn-down" data-dir="down">⬇️</button>
+        </div>
+    </div>
+
+    <script src="js/core/config.js"></script>
+    <script src="js/core/storage.js"></script>
+    <script src="js/core/telegram.js"></script>
+    <script src="js/core/regions.js"></script>
+    <script src="js/core/crystals.js"></script>
+    <script src="js/core/groups.js"></script>
+    <script src="js/core/championship.js"></script>
+    <script src="js/core/firebase.js"></script>
+    <script src="js/core/skins.js"></script>
+    <script src="js/core/trophies.js"></script>
+
+    <script src="js/game/snake.js"></script>
+    <script src="js/game/food.js"></script>
+    <script src="js/game/bot.js"></script>
+    <script src="js/game/camera.js"></script>
+    <script src="js/game/collision.js"></script>
+    <script src="js/game/renderer.js"></script>
+    <script src="js/game/input.js"></script>
+    <script src="js/game/game.js"></script>
+
+    <script src="js/ui/zones.js"></script>
+    <script src="js/ui/settings.js"></script>
+    <script src="js/ui/rating.js"></script>
+    <script src="js/ui/regionsUI.js"></script>
+    <script src="js/ui/groupsUI.js"></script>
+    <script src="js/ui/skinPreview.js"></script>
+    <script src="js/ui/skinsUI.js"></script>
+    <script src="js/ui/championshipUI.js"></script>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
+
+
+
