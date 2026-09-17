@@ -170,19 +170,43 @@ const Game = {
         });
         this.snakes.push(this.snake);
 
-        const colors = ['#ef4444','#fbbf24','#a78bfa','#22d3ee','#f472b6','#84cc16','#f97316','#06b6d4','#8b5cf6','#ec4899'];
-        const botNames = ['Аждар','Кобра','Питон','Анаконда','Гюрза','Мамба','Випера','Удав','Тайпан','Боа'];
+        // ===== ДАРАЖАЛИ БОТЛАР =====
+        // Ўйинчи кубогига қараб ботлар даражасини аниқлаш
+        const playerTrophies = this.playerTrophies || 0;
+        const difficulty = getBotDifficulty(playerTrophies);
+        const difficultyColors = {
+            'easy':      '#84cc16',  // Лайм
+            'medium':    '#22d3ee',  // Кўк
+            'hard':      '#fbbf24',  // Сариқ
+            'expert':    '#f97316',  // Оранж
+            'legendary': '#ef4444'   // Қизил
+        };
+        const difficultyEmoji = {
+            'easy':      '🟢',
+            'medium':    '🔵',
+            'hard':      '🟡',
+            'expert':    '🟠',
+            'legendary': '🔴'
+        };
+
+        const botNames = BOT_NAMES[difficulty] || BOT_NAMES.medium;
+
         for (let i = 0; i < GameState.settings.bots; i++) {
             const b = new Snake({
-                id:'bot_'+i, isPlayer:false, color:colors[i%colors.length], name:botNames[i % botNames.length],
+                id:'bot_'+i, isPlayer:false,
+                color:difficultyColors[difficulty] || '#ef4444',
+                name:difficultyEmoji[difficulty] + ' ' + botNames[i % botNames.length],
                 worldCols:this.worldCols, worldRows:this.worldRows,
                 startX: Math.floor(Math.random()*this.worldCols),
                 startY: Math.floor(Math.random()*this.worldRows),
                 length: 5 + Math.floor(Math.random()*5)
             });
             this.snakes.push(b);
-            this.bots.push(new BotController(b, this));
+            this.bots.push(new BotController(b, this, difficulty));
         }
+
+        console.log('🤖 Ботлар даражаси:', difficulty,
+                    '| Ўйинчи кубоги:', playerTrophies);
 
         this.food.spawn(CONFIG.FOOD_INITIAL);
         this.camera.x = this.snake.getHead().x - (this.canvas.width / CONFIG.GRID) / 2;
@@ -404,5 +428,6 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js гуруҳ режими қўшилди');
+
 
 
