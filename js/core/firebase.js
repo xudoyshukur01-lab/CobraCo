@@ -40,6 +40,7 @@ const FirebaseDB = {
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     lastPlayedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
+                console.log('✅ Янги фойдаланувчи');
             } else {
                 const update = { lastPlayedAt: firebase.firestore.FieldValue.serverTimestamp() };
                 if (region) { update.countryCode = region.countryCode; update.region = region.region; }
@@ -48,6 +49,7 @@ const FirebaseDB = {
         } catch (e) { console.error('❌ saveUser:', e.message); }
     },
 
+    // ===== Кубоклар =====
     async getTrophies() {
         if (!this.isReady || !this.user) return 0;
         try {
@@ -55,12 +57,18 @@ const FirebaseDB = {
             return doc.exists ? (doc.data().trophies || 0) : 0;
         } catch (e) { return 0; }
     },
-    async updateTrophies(v) {
+
+    async updateTrophies(newTotal) {
         if (!this.isReady || !this.user) return;
-        try { await this.db.collection('users').doc(String(this.user.id)).update({ trophies: v }); }
-        catch (e) { console.error(e.message); }
+        try {
+            await this.db.collection('users').doc(String(this.user.id)).update({
+                trophies: newTotal
+            });
+            console.log('🏆 Кубоклар янгиланди:', newTotal);
+        } catch (e) { console.error('❌ updateTrophies:', e.message); }
     },
 
+    // ===== Кристаллар =====
     async getCrystals() {
         if (!this.isReady || !this.user) return 0;
         try {
@@ -68,64 +76,39 @@ const FirebaseDB = {
             return doc.exists ? (doc.data().crystals || 0) : 0;
         } catch (e) { return 0; }
     },
+
     async addCrystals(amount) {
         if (!this.isReady || !this.user) return;
         try {
             await this.db.collection('users').doc(String(this.user.id)).update({
                 crystals: firebase.firestore.FieldValue.increment(amount)
             });
-        } catch (e) { console.error(e.message); }
+        } catch (e) { console.error('❌ addCrystals:', e.message); }
     },
 
-    // ===== Баллни сақлаш (барча рейтингларга) =====
-    async saveScore(zoneId, score) {
-        if (!this.isReady || !this.user) return;
-        try {
-            // Ҳар бир рейтингга қўшиш
-            const scopes = ['global', 'country', 'region'];
-            for (const scope of scopes) {
-                await this.addToLeaderboard(scope, score);
-            }
-
-            // Фойдаланувчининг шахсий рекордини янгилаш
-            const ref = this.db.collection('users').doc(String(this.user.id));
-            const doc = await ref.get();
-            if (doc.exists) {
-                const data = doc.data();
-                const bestScores = data.bestScores || {};
-                const oldBest = bestScores[zoneId] || 0;
-                if (score > oldBest) {
-                    bestScores[zoneId] = score;
-                    await ref.update({
-                        bestScores: bestScores,
-                        totalGames: (data.totalGames || 0) + 1
-                    });
-                } else {
-                    await ref.update({
-                        totalGames: (data.totalGames || 0) + 1
-                    });
-                }
-            }
-            console.log('✅ Балл сақланди:', score, '(барча рейтингларга)');
-        } catch (e) {
-            console.error('❌ saveScore:', e.message);
-        }
-    },
-    async addToLeaderboard(scope, score) {
+    // ===== Рейтингга қўшиш (кубок бўйича) =====
+    async addToLeaderboard(scope, trophies) {
         if (!this.isReady || !this.user) return;
         const region = Regions.getRegion();
         if (!region) return;
         const docId = Regions.getLeaderboardId(scope, region.countryCode, region.region);
         try {
-            await this.db.collection('leaderboard').doc(docId).collection('scores').add({
-                telegramId: this.user.id, username: this.user.username || '',
-                firstName: this.user.firstName || '', lastName: this.user.lastName || '',
-                score: score, countryCode: region.countryCode, region: region.region,
-                date: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } catch (e) { console.error(e.message); }
+            await this.db.collection('leaderboard').doc(docId)
+                .collection('scores').doc(String(this.user.id)).set({
+                    telegramId: this.user.id,
+                    username: this.user.username || '',
+                    firstName: this.user.firstName || '',
+                    lastName: this.user.lastName || '',
+                    trophies: trophies,
+                    countryCode: region.countryCode,
+                    region: region.region,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            console.log('🏆 Рейтингга қўшилди:', docId, trophies);
+        } catch (e) { console.error('❌ addToLeaderboard:', e.message); }
     },
 
+    // ===== Рейтингни олиш (кубок бўйича) =====
     async getLeaderboard(scope, limit = 100) {
         if (!this.isReady) return [];
         const region = Regions.getRegion();
@@ -133,18 +116,39 @@ const FirebaseDB = {
         const docId = Regions.getLeaderboardId(scope, region.countryCode, region.region);
         try {
             const snap = await this.db.collection('leaderboard').doc(docId)
-                .collection('scores').orderBy('score','desc').limit(limit * 3).get();
-            const seen = new Map();
-            snap.docs.forEach(doc => {
-                const d = doc.data();
-                const k = String(d.telegramId);
-                if (!seen.has(k) || seen.get(k).score < d.score) seen.set(k, d);
-            });
-            return Array.from(seen.values()).sort((a,b) => b.score - a.score).slice(0, limit);
-        } catch (e) { return []; }
+                .collection('scores')
+                .orderBy('trophies', 'desc')
+                .limit(limit)
+                .get();
+            return snap.docs.map(doc => doc.data());
+        } catch (e) {
+            console.error('❌ getLeaderboard:', e.message);
+            return [];
+        }
     },
 
-    // ===== ГУРУҲЛАР =====
+    // ===== Балл сақлаш (эски мослик учун) =====
+    async saveScore(zoneId, score) {
+        if (!this.isReady || !this.user) return;
+        const ref = this.db.collection('users').doc(String(this.user.id));
+        try {
+            const doc = await ref.get();
+            if (doc.exists) {
+                const data = doc.data();
+                const bestScores = data.bestScores || {};
+                const oldBest = bestScores[zoneId] || 0;
+                if (score > oldBest) {
+                    bestScores[zoneId] = score;
+                }
+                await ref.update({
+                    bestScores: bestScores,
+                    totalGames: (data.totalGames || 0) + 1
+                });
+            }
+        } catch (e) { console.error('❌ saveScore:', e.message); }
+    },
+
+    // ===== ГУРУҲЛАР (ўзгаришсиз) =====
     async createGroup(groupId, user) {
         if (!this.isReady) throw new Error('Firebase йўқ');
         const ref = this.db.collection('groups').doc(groupId);
@@ -221,5 +225,4 @@ const FirebaseDB = {
     }
 };
 
-console.log('✅ firebase.js юкланди');
-
+console.log('✅ firebase.js юкланди (кубок рейтинги)');

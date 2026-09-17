@@ -405,3 +405,4 @@ Game.gameOver = async function(reason) {
 
 console.log('✅ game.js гуруҳ режими қўшилди');
 
+

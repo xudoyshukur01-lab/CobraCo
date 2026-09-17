@@ -1,4 +1,4 @@
-﻿// ===== Чемпионат UI =====
+﻿// ===== Чемпионат UI (кубок бўйича) =====
 const ChampionshipUI = {
     init() {
         document.getElementById('championshipBtn')?.addEventListener('click', () => this.open());
@@ -20,31 +20,38 @@ const ChampionshipUI = {
         if (regionList) regionList.innerHTML = '<div class="rating-loading">Юкланмоқда...</div>';
 
         const scopes = [
-            { el: globalList, scope: 'global', title: '🌍 Дунё' },
-            { el: countryList, scope: 'country', title: '🏳️ Мамлакат' },
-            { el: regionList, scope: 'region', title: '📍 Вилоят' }
+            { el: globalList, scope: 'global' },
+            { el: countryList, scope: 'country' },
+            { el: regionList, scope: 'region' }
         ];
+
+        const rewards = {
+            global:  [100, 80, 60, 40, 20],
+            country: [50, 40, 30, 20, 10],
+            region:  [30, 25, 20, 15, 10]
+        };
 
         for (const s of scopes) {
             if (!s.el) continue;
             try {
-                const data = await FirebaseDB.getLeaderboard(s.scope, 3);
+                const data = await FirebaseDB.getLeaderboard(s.scope, 5);
                 s.el.innerHTML = '';
                 if (!data || data.length === 0) {
                     s.el.innerHTML = '<div style="color:#64748b;font-size:13px;text-align:center;padding:10px;">Ҳали натижа йўқ</div>';
                     continue;
                 }
-                const icons = ['🥇','🥈','🥉'];
-                const rewards = [100, 50, 25];
+                const icons = ['🥇','🥈','🥉','4️⃣','5️⃣'];
                 data.forEach((d, i) => {
                     const name = d.username ? '@' + d.username : (d.firstName || 'X');
+                    const trophies = d.trophies || 0;
+                    const reward = rewards[s.scope][i] || 0;
                     const row = document.createElement('div');
                     row.className = 'champion-row';
                     row.innerHTML = `
                         <div class="champion-rank">${icons[i]}</div>
                         <div class="champion-name">${name}</div>
-                        <div class="champion-score">${d.score}</div>
-                        <div class="champion-reward">+${rewards[i]} 💎</div>
+                        <div class="champion-score">🏆 ${trophies}</div>
+                        <div class="champion-reward">+${reward} 💎</div>
                     `;
                     s.el.appendChild(row);
                 });
@@ -60,4 +67,4 @@ const ChampionshipUI = {
     }
 };
 
-console.log('✅ championshipUI.js юкланди');
+console.log('✅ championshipUI.js юкланди (кубок бўйича)');

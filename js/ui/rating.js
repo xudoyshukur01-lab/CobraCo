@@ -1,4 +1,4 @@
-﻿// ===== Рейтинг UI (3 таб) =====
+﻿// ===== Рейтинг UI (кубок бўйича) =====
 const RatingUI = {
     currentScope: 'global',
     loading: false,
@@ -7,7 +7,6 @@ const RatingUI = {
         document.getElementById('ratingBtn')?.addEventListener('click', () => this.open());
         document.getElementById('ratingBackBtn')?.addEventListener('click', () => showScreen('zonesScreen'));
 
-        // Таб тугмалари
         document.querySelectorAll('.tab-btn').forEach(t => {
             t.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
@@ -64,14 +63,20 @@ const RatingUI = {
                 const rank = i + 1;
                 const isMe = d.telegramId === myId;
                 const name = d.username ? '@' + d.username : `${d.firstName||''} ${d.lastName||''}`.trim() || 'Фойдаланувчи';
+
+                // Кубокни олиш
+                const trophies = d.trophies || 0;
+                const rankInfo = Trophies.getRank(trophies);
+
                 const row = document.createElement('div');
                 row.className = 'rating-row' + (isMe ? ' me' : '') + (rank <= 3 ? ' top' + rank : '');
                 row.innerHTML = `
                     <div class="rating-rank">${rank}</div>
                     <div class="rating-info">
                         <div class="rating-name">${name}${isMe ? ' <small style="color:#4ade80">(сиз)</small>' : ''}</div>
+                        <div class="rating-trophies">${rankInfo.icon} ${rankInfo.name}</div>
                     </div>
-                    <div class="rating-score">${d.score}</div>
+                    <div class="rating-trophy">🏆 ${trophies}</div>
                 `;
                 list.appendChild(row);
             });
@@ -83,4 +88,4 @@ const RatingUI = {
     }
 };
 
-console.log('✅ rating.js юкланди');
+console.log('✅ rating.js юкланди (кубок бўйича)');
