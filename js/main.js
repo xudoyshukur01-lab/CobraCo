@@ -21,6 +21,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     // 4. UI инициализация
     Game.init();
     ZonesUI.init();
+    if (typeof ModesUI !== 'undefined') ModesUI.init();
     SettingsUI.init();
     RatingUI.init();
     RegionsUI.init();
@@ -86,6 +87,7 @@ function showUserRegion() {
     const flag = Regions.getCountryFlag(region.countryCode);
     el.innerHTML = `${flag} ${region.region}`;
 }
+
 
 
 

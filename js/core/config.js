@@ -1,6 +1,6 @@
 ﻿// ===== CobraCo - Асосий созламалар =====
 const CONFIG = {
-    VERSION: '1.0.0-stage3',
+    VERSION: '2.0.0',
     GRID: 20,
     BASE_SPEED: 150,
     MIN_SPEED: 70,
@@ -40,23 +40,86 @@ function pickRandomFoodType() {
     return FOOD_TYPES.normal;
 }
 
-// ===== ЗОНАЛАР =====
+// ===== ЎЙИН РЕЖИМЛАРИ =====
+const GAME_MODES = [
+    {
+        id: 'classic',
+        name: 'Классик',
+        emoji: '🎯',
+        desc: '15 ўйинчи, 3 ҳаёт, 2-5 дақиқа',
+        color: '#4ade80',
+        mapSize: 500,
+        bots: 15,
+        gameTime: 180,
+        respawns: 3,
+        worldCycle: 0,  // Йўқ
+        minPlayers: 0,
+        maxPlayers: 15
+    },
+    {
+        id: 'world',
+        name: 'Дунё',
+        emoji: '🌍',
+        desc: '1000+ ўйинчи, 200 бот, 10 дақиқа',
+        color: '#22d3ee',
+        mapSize: 5000,
+        bots: 200,
+        gameTime: 600,
+        respawns: 3,
+        worldCycle: 600,  // 10 дақиқа
+        minPlayers: 0,
+        maxPlayers: 9999
+    },
+    {
+        id: 'tournament',
+        name: 'Турнир',
+        emoji: '🏆',
+        desc: '32 ўйинчи, 1/16, 1/8, 1/4, 1/2, финал',
+        color: '#fbbf24',
+        mapSize: 1000,
+        bots: 0,
+        gameTime: 300,
+        respawns: 1,
+        worldCycle: 0,
+        minPlayers: 32,
+        maxPlayers: 32
+    },
+    {
+        id: 'group',
+        name: 'Гуруҳ',
+        emoji: '👥',
+        desc: 'Дўстлар билан, гуруҳ коди орқали',
+        color: '#a855f7',
+        mapSize: 1000,
+        bots: 0,
+        gameTime: 300,
+        respawns: 3,
+        worldCycle: 0,
+        minPlayers: 2,
+        maxPlayers: 20
+    }
+];
+
+// ===== ЗОНАЛАР (эски мослик учун) =====
 const ZONES = [
     { id:'classic', name:'Классик', desc:'Катта майдон, ботлар билан', emoji:'🐍', color:'#4ade80', unlockScore:0, speedMultiplier:1.0 }
 ];
 
 // ===== ХАРИТА ЎЛЧАМЛАРИ =====
 const MAP_SIZES = {
-    '200':  { cols:200,  rows:200,  name:'Кичик' },
-    '500':  { cols:500,  rows:500,  name:'Ўрта' },
-    '1000': { cols:1000, rows:1000, name:'Катта' }
+    '200':   { cols:200,   rows:200,   name:'Кичик' },
+    '500':   { cols:500,   rows:500,   name:'Ўрта' },
+    '1000':  { cols:1000,  rows:1000,  name:'Катта' },
+    '5000':  { cols:5000,  rows:5000,  name:'Дунё' }
 };
 
 // ===== ГЛОБАЛ ҲОЛАТ =====
 const GameState = {
     user: null,
+    mode: null,         // Танланган режим
     settings: { bots:3, gameTime:180, mapSize:500 }
 };
 
 console.log('✅ config.js юкланди');
-console.log('📦 Овқат турлари:', Object.keys(FOOD_TYPES).length);
+console.log('  🎮 Режимлар:', GAME_MODES.length);
+console.log('  📦 Овқат турлари:', Object.keys(FOOD_TYPES).length);

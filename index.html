@@ -86,7 +86,15 @@
                 <button id="cancelJoinBtn" class="menu-btn" style="width:100%; margin-top:8px;">Бекор қилиш</button>
             </div>
         </div>
+    </div>    <div id="modesScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="modesBackBtn">←</button>
+            <h2>🎮 Ўйин режими</h2>
+        </div>
+        <p class="modes-desc">Ўйин режимини танланг</p>
+        <div id="modesList" class="modes-list"></div>
     </div>
+
 
     <div id="zonesScreen" class="screen">
         <div class="zones-header">
@@ -115,7 +123,16 @@
             <button id="skinChangeBtn" class="skin-change-btn">🎨 Скинни ўзгартириш</button>
         </div>
 
-        <div id="zonesList" class="zones-list"></div>
+        <div class="zones-list">
+            <div class="mode-launch-card" id="modesBtn">
+                <div class="mode-launch-icon">🎮</div>
+                <div class="mode-launch-text">
+                    <h3>Ўйинни бошлаш</h3>
+                    <p>Режимни танланг</p>
+                </div>
+                <div class="mode-launch-arrow">▶</div>
+            </div>
+        </div>
         <div class="zones-footer">
             <p>Умумий рекорд: <span id="bestScore">0</span></p>
             <div class="menu-buttons">
@@ -280,6 +297,7 @@
     <script src="js/game/input.js"></script>
     <script src="js/game/game.js"></script>
 
+    <script src="js/ui/modes.js"></script>
     <script src="js/ui/zones.js"></script>
     <script src="js/ui/settings.js"></script>
     <script src="js/ui/rating.js"></script>
@@ -292,6 +310,7 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
 
 
 

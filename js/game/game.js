@@ -431,3 +431,37 @@ console.log('✅ game.js гуруҳ режими қўшилди');
 
 
 
+
+// ===== РЕЖИМ БЎЙИЧА ЎЙИННИ БОШЛАШ =====
+Game.startMode = function(mode) {
+    console.log('🎮 Режим бошланди:', mode.id);
+
+    this.mode = mode;
+
+    // Карта ўлчами
+    const mapCfg = MAP_SIZES[String(mode.mapSize)] || MAP_SIZES['500'];
+    this.worldCols = mapCfg.cols;
+    this.worldRows = mapCfg.rows;
+
+    // Созламаларни ўрнатиш
+    GameState.settings.bots = mode.bots;
+    GameState.settings.gameTime = mode.gameTime;
+    GameState.settings.mapSize = mode.mapSize;
+
+    // Овқат
+    this.food = new FoodManager(this.worldCols, this.worldRows);
+
+    // Экранни кўрсатиш
+    showScreen('gameScreen');
+
+    // Мослаш
+    setTimeout(() => this.resizeCanvas(), 50);
+    setTimeout(() => this.resizeCanvas(), 300);
+    setTimeout(() => this.resizeCanvas(), 600);
+
+    // Ўйинни тайёрлаш
+    this.prepare();
+    this.loadTop5();
+};
+
+console.log('✅ game.js startMode қўшилди');

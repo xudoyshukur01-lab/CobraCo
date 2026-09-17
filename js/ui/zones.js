@@ -3,13 +3,11 @@ const ZonesUI = {
     init() {
         // Кубок карточкаси — босилганда рейтингга
         document.getElementById('trophyCard')?.addEventListener('click', () => {
-            console.log('🏆 Кубок босилди — рейтингга ўтиш');
             if (typeof RatingUI !== 'undefined') RatingUI.open();
         });
 
-        // Кристалл карточкаси — босилганда чемпионатга (ёки келажакда дўконга)
+        // Кристалл карточкаси — чемпионатга
         document.getElementById('crystalCard')?.addEventListener('click', () => {
-            console.log('💎 Кристалл босилди — чемпионатга ўтиш');
             if (typeof ChampionshipUI !== 'undefined') ChampionshipUI.open();
         });
 
@@ -28,31 +26,12 @@ const ZonesUI = {
             if (typeof ChampionshipUI !== 'undefined') ChampionshipUI.open();
         });
 
-        this.render();
-        this.updateTrophyDisplay();
-    },
-
-    render() {
-        const list = document.getElementById('zonesList');
-        if (!list) return;
-        list.innerHTML = '';
-        const totalBest = Storage.getTotalBest();
-        ZONES.forEach(zone => {
-            const locked = totalBest < zone.unlockScore;
-            const best = Storage.getBest(zone.id);
-            const card = document.createElement('div');
-            card.className = 'zone-card' + (locked ? ' locked' : '');
-            card.innerHTML = `
-                <div class="zone-info">
-                    <h3>${zone.emoji} ${zone.name}</h3>
-                    <p>${zone.desc}</p>
-                    <p style="color:#fbbf24;font-size:11px;margin-top:3px;">Рекорд: ${best}</p>
-                </div>
-                <div class="zone-badge">${locked ? '🔒' : '▶'}</div>
-            `;
-            if (!locked) card.addEventListener('click', () => Game.start(zone));
-            list.appendChild(card);
+        // Ўйинни бошлаш
+        document.getElementById('modesBtn')?.addEventListener('click', () => {
+            if (typeof ModesUI !== 'undefined') ModesUI.open();
         });
+
+        this.updateTrophyDisplay();
     },
 
     updateTrophyDisplay() {
