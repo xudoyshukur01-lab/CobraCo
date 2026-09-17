@@ -118,12 +118,14 @@ const Game = {
     },
 
     async loadTop5() {
+        // Аввал реал-вақт кўрсатиш
+        this.renderTop5([]);
+
+        // Кейин Firebase дан
         if (typeof FirebaseDB === 'undefined' || !FirebaseDB.isReady) {
-            console.log('⚠️ Firebase йўқ — ТОП-5 ўтказиб юборилди');
             return;
         }
         try {
-            // ⚠️ Дунё рейтингидан олиш
             const top = await FirebaseDB.getLeaderboard('global', 5);
             this.renderTop5(top);
         } catch (e) {
@@ -131,46 +133,78 @@ const Game = {
         }
     },
 
-    renderTop5(top) {
+    renderTop5(firebaseTop) {
         const list = document.getElementById('top5List');
         if (!list) return;
         list.innerHTML = '';
+
+        // ===== 1. ҲОЗИРГИ ЎЙИНЧИЛАР (реал-вақт) =====
+        const livePlayers = this.snakes
+            .filter(s => s.alive)
+            .map(s => ({
+                name: s.isPlayer ? 'Сиз' : (s.name || 'Бот'),
+                score: s.isPlayer ? this.score : (s.score || 0),
+                isPlayer: s.isPlayer,
+                isBot: !s.isPlayer
+            }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
 
         // Ўйинчилар сони
         if (this.isWorldMode) {
             const playerCount = GameState.settings.playerCount || 1;
             const botCount = GameState.settings.bots || 0;
-            const total = playerCount + botCount;
-
             const info = document.createElement('div');
             info.style.cssText = 'font-size:10px;color:#94a3b8;text-align:center;padding:3px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:4px;';
-            info.innerHTML = '👥 ' + playerCount + ' + 🤖 ' + botCount + ' = ' + total + '/200';
+            info.innerHTML = '👥 ' + playerCount + ' + 🤖 ' + botCount;
             list.appendChild(info);
         }
 
-        const myId = TelegramAuth.user ? TelegramAuth.user.id : 0;
-        top.forEach((d, i) => {
-            const rank = i + 1;
-            const isMe = d.telegramId === myId;
-            const isBot = d.isBot === true;
-
-            let name;
-            if (isBot) {
-                name = '🤖 ' + (d.firstName || 'Бот');
-            } else {
-                name = d.username ? '@' + d.username : (d.firstName || 'X');
-            }
+        // Live рейтинг
+        if (livePlayers.length > 0) {
+            const liveTitle = document.createElement('div');
+            liveTitle.style.cssText = 'font-size:9px;color:#4ade80;text-align:center;padding:2px;font-weight:700;';
+            liveTitle.textContent = '🔴 ҲОЗИРГИ ЎЙИН';
+            list.appendChild(liveTitle);
 
             const icons = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-            const row = document.createElement('div');
-            row.className = 'top5-item' + (isMe ? ' me' : '') + (isBot ? ' bot' : '');
-            row.innerHTML = '<span class="top5-rank">' + (icons[i] || rank) + '</span>' +
-                           '<span class="top5-name">' + name + '</span>' +
-                           '<span class="top5-score">' + (d.trophies || 0) + '</span>';
-            list.appendChild(row);
-        });
-        if (top.length === 0) {
-            list.innerHTML += '<div style="font-size:10px;color:#64748b;text-align:center;">Ҳали натижа йўқ</div>';
+            livePlayers.forEach((p, i) => {
+                const row = document.createElement('div');
+                row.className = 'top5-item' + (p.isPlayer ? ' me' : '') + (p.isBot ? ' bot' : '');
+                row.innerHTML = '<span class="top5-rank">' + icons[i] + '</span>' +
+                               '<span class="top5-name">' + p.name + '</span>' +
+                               '<span class="top5-score">' + p.score + '</span>';
+                list.appendChild(row);
+            });
+        }
+
+        // ===== 2. FIREBASE ТОП-5 =====
+        if (firebaseTop && firebaseTop.length > 0) {
+            const fbTitle = document.createElement('div');
+            fbTitle.style.cssText = 'font-size:9px;color:#fbbf24;text-align:center;padding:2px;font-weight:700;margin-top:5px;border-top:1px solid rgba(255,255,255,0.1);';
+            fbTitle.textContent = '🏆 УМУМИЙ РЕЙТИНГ';
+            list.appendChild(fbTitle);
+
+            const myId = TelegramAuth.user ? TelegramAuth.user.id : 0;
+            firebaseTop.forEach((d, i) => {
+                const isMe = d.telegramId === myId;
+                const isBot = d.isBot === true;
+                let name;
+                if (isBot) name = '🤖 ' + (d.firstName || 'Бот');
+                else name = d.username ? '@' + d.username : (d.firstName || 'X');
+
+                const row = document.createElement('div');
+                row.className = 'top5-item' + (isMe ? ' me' : '') + (isBot ? ' bot' : '');
+                const icons = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+                row.innerHTML = '<span class="top5-rank">' + (icons[i] || (i+1)) + '</span>' +
+                               '<span class="top5-name">' + name + '</span>' +
+                               '<span class="top5-score">' + (d.trophies || 0) + '</span>';
+                list.appendChild(row);
+            });
+        }
+
+        if (livePlayers.length === 0 && (!firebaseTop || firebaseTop.length === 0)) {
+            list.innerHTML = '<div style="font-size:10px;color:#64748b;text-align:center;padding:10px;">Ҳали натижа йўқ</div>';
         }
     },
 
@@ -511,7 +545,47 @@ const Game = {
         document.getElementById('overlayTitle').textContent = t;
         document.getElementById('overlayText').innerText = txt;
         document.getElementById('startBtn').textContent = b;
-        document.getElementById('overlay').classList.remove('hidden');
+
+        // ⚠️ Қўшимча тугмалар
+        const overlay = document.getElementById('overlay');
+
+        // Аввалги тугмаларни тозалаш
+        overlay.querySelectorAll('.overlay-extra-btn').forEach(el => el.remove());
+
+        // Агар ўйин тугаган бўлса — орқага ва менюга тугмалар
+        if (this.isOver) {
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'overlay-extra-btn';
+            btnContainer.style.cssText = 'display:flex;gap:10px;margin-top:10px;';
+
+            const backBtn = document.createElement('button');
+            backBtn.textContent = '⬅️ Орқага';
+            backBtn.style.cssText = 'padding:12px 20px;font-size:14px;font-weight:700;border-radius:40px;background:rgba(255,255,255,0.1);color:#fff;border:2px solid rgba(255,255,255,0.2);cursor:pointer;font-family:inherit;';
+            backBtn.onclick = () => {
+                this.hideOverlay();
+                if (typeof ModesUI !== 'undefined') ModesUI.open();
+            };
+
+            const menuBtn = document.createElement('button');
+            menuBtn.textContent = '🏠 Меню';
+            menuBtn.style.cssText = 'padding:12px 20px;font-size:14px;font-weight:700;border-radius:40px;background:rgba(74,222,128,0.2);color:#4ade80;border:2px solid rgba(74,222,128,0.4);cursor:pointer;font-family:inherit;';
+            menuBtn.onclick = () => {
+                this.hideOverlay();
+                if (typeof ZonesUI !== 'undefined') {
+                    ZonesUI.render();
+                    if (typeof TrophiesUI !== 'undefined') {
+                        TrophiesUI.updateHeader(this.playerTrophies || 0);
+                    }
+                }
+                showScreen('zonesScreen');
+            };
+
+            btnContainer.appendChild(backBtn);
+            btnContainer.appendChild(menuBtn);
+            overlay.appendChild(btnContainer);
+        }
+
+        overlay.classList.remove('hidden');
     },
     hideOverlay() { document.getElementById('overlay').classList.add('hidden'); },
 
@@ -861,6 +935,8 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js динамик карта (тузатилган)');
+
+
 
 
 
