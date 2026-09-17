@@ -214,6 +214,7 @@ const Game = {
 
         // Овқат сони режимга қараб
         const foodCount = this.mode?.foodCount || CONFIG.FOOD_INITIAL;
+        this.food.targetCount = foodCount;
         this.food.spawn(foodCount);
         console.log('🍎 Овқатлар:', foodCount, '| Карта:', this.worldCols + 'x' + this.worldRows);
         this.camera.x = this.snake.getHead().x - (this.canvas.width / CONFIG.GRID) / 2;
@@ -226,15 +227,24 @@ const Game = {
         this.hideOverlay();
         this.isRunning = true;
         this.speed = this.baseSpeed;
+
         clearInterval(this.loop);
         this.loop = setInterval(() => this.update(), this.speed);
+
         this.botLoop = setInterval(() => {
             const n = Date.now();
             this.bots.forEach(b => b.update(n));
         }, 100);
+
         this.startTimer();
+
         clearInterval(this.top5Interval);
         this.top5Interval = setInterval(() => this.loadTop5(), CONFIG.TOP5_UPDATE_INTERVAL);
+
+        // ⚠️ ДИНАМИК КАРТА — дарҳол бошлаш
+        if (CONFIG.MAP_SHRINK_ENABLED) {
+            this.startMapShrink();
+        }
     },
 
     startTimer() {
@@ -263,7 +273,10 @@ const Game = {
             const eaten = this.food.checkEat(h);
             if (eaten) this.handleFoodEaten(s, eaten);
         });
-        if (this.food.items.length < CONFIG.FOOD_MIN) this.food.spawn(CONFIG.FOOD_SPAWN_BATCH);
+        // ⚠️ Овқатлар етарлими — автоматик тўлдириш
+        if (this.food.items.length < this.food.targetCount) {
+            this.food.refill(Math.min(50, this.food.targetCount - this.food.items.length));
+        }
         Collision.checkSnakes(this.snakes, this.food);
         if (!this.snake.alive) this.handlePlayerDeath();
         if (this.snake.alive)
@@ -301,17 +314,41 @@ const Game = {
 
     handlePlayerDeath() {
         if (this.isOver) return;
-        if (this.respawnsLeft > 1) {
+
+        // ⚠️ Агар вақт тугамаган бўлса — респавн
+        if (this.timeLeft > 0 && this.respawnsLeft > 1) {
             this.respawnsLeft--;
             document.getElementById('respawn').textContent = this.respawnsLeft;
+
+            console.log('💀 Ўлдингиз! Респавн... Қолган:', this.respawnsLeft);
+
             setTimeout(() => {
                 if (this.isOver) return;
-                this.snake.reset(Math.floor(Math.random()*this.worldCols), Math.floor(Math.random()*this.worldRows), 5);
+                this.snake.reset(
+                    Math.floor(Math.random()*this.worldCols),
+                    Math.floor(Math.random()*this.worldRows), 5
+                );
                 this.snake.alive = true;
                 this.camera.x = this.snake.getHead().x - 10;
                 this.camera.y = this.snake.getHead().y - 10;
             }, CONFIG.RESPAWN_DELAY);
-        } else this.gameOver('Сиз ўлдингиз!');
+        } else if (this.timeLeft <= 0) {
+            // Вақт тугаган — ўйин тугайди
+            this.gameOver('Вақт тугади!');
+        } else {
+            // Респавнлар тугаган — вақт ҳали бор
+            console.log('💀 Респавнлар тугади, лекин вақт бор. Кутиш...');
+            this.snake.alive = false;
+
+            // Кузатиш режими — вақт тугагунча
+            setTimeout(() => {
+                if (!this.isOver && this.timeLeft > 0) {
+                    this.showOverlay('💀 Респавнлар тугади',
+                        'Вақт тугагунча кузатинг\nҚолган вақт: ' + this.timeLeft + 'с', 'Кутиш');
+                    document.getElementById('startBtn').style.display = 'none';
+                }
+            }, 500);
+        }
     },
 
     render() {
@@ -325,39 +362,110 @@ const Game = {
 
     async gameOver(reason) {
         if (this.isOver) return;
-        this.isOver = true; this.isRunning = false;
+        this.isOver = true;
+        this.isRunning = false;
+
         clearInterval(this.loop);
         clearInterval(this.botLoop);
         clearInterval(this.timerInterval);
         clearInterval(this.top5Interval);
+        if (this.shrinkInterval) clearInterval(this.shrinkInterval);
 
-        Storage.setBest(this.zone?.id || this.mode?.id || 'classic', this.score);
+        // ⚠️ МУҲИМ: Кубок фақат вақт тугагач тақсимланади
+        const isTimeUp = reason === 'Вақт тугади!' || this.timeLeft <= 0;
 
-        if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
-            await FirebaseDB.saveScore(this.zone?.id || this.mode?.id || 'classic', this.score);
+        if (isTimeUp) {
+            console.log('⏱ Вақт тугади — кубок тақсимлаш бошланди');
+            await this.distributeTrophies();
+        } else {
+            console.log('💀 Ўйинчи ўлди — кубок тақсимланмайди');
+            // Фақат шахсий рекорд сақланади
+            Storage.setBest(this.zone?.id || this.mode?.id || 'classic', this.score);
+            if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
+                await FirebaseDB.saveScore(this.zone?.id || this.mode?.id || 'classic', this.score);
+            }
         }
 
+        // Реал-таймга якуний балл
+        if (this.isWorldMode && this.session && RealtimeDB.isReady && TelegramAuth.user) {
+            await RealtimeDB.updateScore(this.session.id, TelegramAuth.user.id, this.score);
+        }
+
+        // Натижа кўрсатиш
+        const resultText = isTimeUp
+            ? reason + '\nБаллингиз: ' + this.score + '\n\n🏆 Кубоклар тақсимланди!'
+            : reason + '\nБаллингиз: ' + this.score + '\n\nКубок тақсимланмади (вақт тугамади)';
+
+        this.showOverlay('Ўйин тугади!', resultText, 'Қайта ўйнаш');
+        TrophiesUI.updateHeader(this.playerTrophies);
+    },
+
+    // ===== КУБОК ТАҚСИМЛАШ (вақт тугагач) =====
+    async distributeTrophies() {
+        // Барча илонларни йиғиш
         const players = this.snakes.map(s => ({
-            id: s.id, name: s.name,
-            score: s.isPlayer ? this.score : Math.floor(Math.random() * this.score * 0.9),
+            id: s.id,
+            name: s.name,
+            score: s.isPlayer ? this.score : (s.score || 0),
             trophies: s.isPlayer ? this.playerTrophies : 0,
             isBot: !s.isPlayer
         }));
 
+        // Балл бўйича саралаш
+        players.sort((a, b) => b.score - a.score);
+
+        console.log('📊 Балл рейтинги:');
+        players.forEach((p, i) => {
+            console.log('  ' + (i + 1) + '. ' + p.name + ' — ' + p.score + ' балл');
+        });
+
+        // Σ = 0 формула билан кубок ҳисоблаш
         const changes = Trophies.calculateChanges(players);
+
+        console.log('🏆 Кубок ўзгаришлари:');
+        players.forEach(p => {
+            const change = changes[p.id] || 0;
+            console.log('  ' + p.name + ': ' + (change > 0 ? '+' : '') + change);
+        });
+
+        // Ўйинчи учун кубок
         const playerChange = changes['player'] || 0;
         const newTotal = Math.max(0, this.playerTrophies + playerChange);
 
+        // Firebase'га сақлаш
         if (playerChange !== 0 && typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
             await FirebaseDB.updateTrophies(newTotal);
+
+            // Барча рейтингларга кубокни юбориш
+            const scopes = ['global', 'country', 'region'];
+            for (const scope of scopes) {
+                await FirebaseDB.addToLeaderboard(scope, newTotal);
+            }
         }
+
         Storage.saveTrophies(newTotal);
         this.playerTrophies = newTotal;
 
+        // Бот кубокларини ҳам янгилаш
+        if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
+            for (const p of players) {
+                if (p.isBot) {
+                    const change = changes[p.id] || 0;
+                    const current = await FirebaseDB.getBotTrophy(p.id);
+                    const botNewTotal = Math.max(0, current + change);
+                    await FirebaseDB.updateBotTrophy(p.id, botNewTotal, { name: p.name });
+                }
+            }
+        }
+
+        // Кубок натижасини кўрсатиш
         this.showTrophyResult(playerChange, newTotal);
-        this.showOverlay('Ўйин тугади!', reason + '\nБаллингиз: ' + this.score, 'Қайта ўйнаш');
-        TrophiesUI.updateHeader(newTotal);
-        setTimeout(() => this.loadTop5(), 1500);
+
+        // Шахсий рекорд сақлаш
+        Storage.setBest(this.zone?.id || this.mode?.id || 'classic', this.score);
+        if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
+            await FirebaseDB.saveScore(this.zone?.id || this.mode?.id || 'classic', this.score);
+        }
     },
 
     showTrophyResult(change, newTotal) {
@@ -585,21 +693,32 @@ Game.gameOver = async function(reason) {
 console.log('✅ game.js бот кубоклари қўшилди');
 
 
-// ===== ДИНАМИК КАРТА (ҳар дақиқада 20% кичраяди) =====
+
+// ===== ДИНАМИК КАРТА =====
 Game.startMapShrink = function() {
-    if (!CONFIG.MAP_SHRINK_ENABLED) return;
+    if (!CONFIG.MAP_SHRINK_ENABLED) {
+        console.log('⚠️ Динамик карта ўчирилган');
+        return;
+    }
 
     // Аввалги интервални тозалаш
-    if (this.shrinkInterval) clearInterval(this.shrinkInterval);
+    if (this.shrinkInterval) {
+        clearInterval(this.shrinkInterval);
+        this.shrinkInterval = null;
+    }
 
     this.originalWorldCols = this.worldCols;
     this.originalWorldRows = this.worldRows;
     this.shrinkStep = 0;
 
-    console.log('🗺️ Динамик карта бошланди:', this.worldCols + 'x' + this.worldRows);
+    console.log('🗺️ Динамик карта бошланди:', this.worldCols + 'x' + this.worldRows,
+                '| Ҳар', CONFIG.SHRINK_INTERVAL / 1000, 'сонияда', CONFIG.SHRINK_PERCENT * 100, '%');
 
     this.shrinkInterval = setInterval(() => {
-        if (!this.isRunning) return;
+        if (!this.isRunning) {
+            console.log('⏸ Ўйин тўхтаган — карта кичрайиши кутилмоқда');
+            return;
+        }
 
         const currentSize = this.worldCols;
         const newSize = Math.max(
@@ -608,7 +727,7 @@ Game.startMapShrink = function() {
         );
 
         if (newSize === currentSize) {
-            // Минималга етди
+            console.log('📏 Минимал ўлчамга етди:', currentSize);
             return;
         }
 
@@ -619,44 +738,41 @@ Game.startMapShrink = function() {
         this.worldCols = newSize;
         this.worldRows = newSize;
 
-        // Барча илонларни марказга тортиш (агар ташқарида бўлса)
+        console.log('🗺️ КАРТА КИЧРАЙДИ:', oldSize + 'x' + oldSize,
+                    '→', newSize + 'x' + newSize,
+                    '(қадам:', this.shrinkStep + ')');
+
+        // Барча илонларни мослаш
         this.snakes.forEach(s => {
             if (!s.alive) return;
             s.worldCols = newSize;
             s.worldRows = newSize;
 
-            // Ҳар бўғинни текшириш
             s.body.forEach(seg => {
-                if (seg.x >= newSize) {
-                    seg.x = Math.floor(seg.x / oldSize * newSize);
-                }
-                if (seg.y >= newSize) {
-                    seg.y = Math.floor(seg.y / oldSize * newSize);
-                }
+                if (seg.x >= newSize) seg.x = Math.floor(Math.random() * newSize);
+                if (seg.y >= newSize) seg.y = Math.floor(Math.random() * newSize);
                 if (seg.x < 0) seg.x = 0;
                 if (seg.y < 0) seg.y = 0;
             });
         });
 
-        // Овқатларни марказга тортиш
+        // Овқатларни мослаш
+        let removedCount = 0;
         this.food.items = this.food.items.filter(f => {
             if (f.x >= newSize || f.y >= newSize) {
-                // Янги жойга кўчириш
                 f.x = Math.floor(Math.random() * newSize);
                 f.y = Math.floor(Math.random() * newSize);
+                removedCount++;
             }
             return true;
         });
 
         // Овқатларни тўлдириш
-        const foodCount = this.mode?.foodCount || CONFIG.FOOD_INITIAL;
-        if (this.food.items.length < foodCount) {
-            this.food.spawn(foodCount - this.food.items.length);
+        const targetFood = this.mode?.foodCount || this.food.targetCount || 3000;
+        this.food.targetCount = targetFood;
+        if (this.food.items.length < targetFood) {
+            this.food.refill(targetFood - this.food.items.length);
         }
-
-        console.log('🗺️ Карта кичрайди:', oldSize + 'x' + oldSize,
-                    '→', newSize + 'x' + newSize,
-                    '(қадам:', this.shrinkStep + ')');
 
         // Камерани мослаш
         if (this.camera) {
@@ -664,42 +780,42 @@ Game.startMapShrink = function() {
             this.camera.updateSize(size, size);
         }
 
-        // Ўйинчига хабар
-        if (this.snake && this.snake.alive) {
-            this.showShrinkMessage(newSize);
-        }
+        // Хабар кўрсатиш
+        this.showShrinkMessage(newSize);
+
+        // ⚠️ Ҳар сафар console'да кўриш
+        console.log('🍎 Овқатлар:', this.food.items.length, '| target:', targetFood);
     }, CONFIG.SHRINK_INTERVAL);
 };
 
-// Карта кичрайганда хабар кўрсатиш
+// ===== КАРТА КИЧРАЙГАНДА ХАБАР =====
 Game.showShrinkMessage = function(newSize) {
     const el = document.getElementById('shrinkMessage');
-    if (!el) return;
+    if (!el) {
+        console.log('⚠️ shrinkMessage элементи йўқ');
+        return;
+    }
     el.textContent = '⚠️ Карта кичрайди: ' + newSize + '×' + newSize;
     el.style.opacity = '1';
+    el.style.display = 'block';
     setTimeout(() => { el.style.opacity = '0'; }, 2500);
-};
 
-// ===== beginPlay да динамик картани ишга тушириш =====
-const _originalBeginPlay = Game.beginPlay;
-Game.beginPlay = function() {
-    _originalBeginPlay.call(this);
-    // Махсус режимлардан кейин
-    setTimeout(() => {
-        if (CONFIG.MAP_SHRINK_ENABLED) {
-            this.startMapShrink();
-        }
-    }, 2000);
+    // Аввалги хабарни тозалаш
+    if (el._timeout) clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => { el.style.opacity = '0'; }, 2500);
 };
 
 // ===== gameOver да тозалаш =====
-const _originalGameOverShrink = Game.gameOver;
+const _originalGameOverShrinkFix = Game.gameOver;
 Game.gameOver = async function(reason) {
     if (this.shrinkInterval) {
         clearInterval(this.shrinkInterval);
         this.shrinkInterval = null;
+        console.log('🛑 Динамик карта тўхтатилди');
     }
-    return _originalGameOverShrink.call(this, reason);
+    return _originalGameOverShrinkFix.call(this, reason);
 };
 
-console.log('✅ game.js динамик карта қўшилди');
+console.log('✅ game.js динамик карта (тузатилган)');
+
+

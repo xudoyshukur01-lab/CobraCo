@@ -58,7 +58,7 @@ const GAME_MODES = [
         bots: 15,
         gameTime: 180,
         respawns: 3,
-        foodCount: 2500,        // 250 × 10
+        foodCount: 3000,        // ⚠️ Кўпайтирилди
         worldCycle: 0
     },
     {
@@ -71,7 +71,7 @@ const GAME_MODES = [
         bots: 200,
         gameTime: 600,
         respawns: 3,
-        foodCount: 6000,        // 600 × 10
+        foodCount: 10000,       // ⚠️ Кўпайтирилди (Дунё катта)
         worldCycle: 600
     },
     {
@@ -84,7 +84,7 @@ const GAME_MODES = [
         bots: 0,
         gameTime: 300,
         respawns: 1,
-        foodCount: 2000,        // 200 × 10
+        foodCount: 2500,        // ⚠️ Кўпайтирилди
         worldCycle: 0
     },
     {
@@ -110,7 +110,7 @@ const GAME_MODES = [
         bots: 50,
         gameTime: 300,
         respawns: 1,
-        foodCount: 3500,        // 350 × 10
+        foodCount: 4000,        // ⚠️ Кўпайтирилди
         worldCycle: 0,
         special: 'zombie'
     },
@@ -124,7 +124,7 @@ const GAME_MODES = [
         bots: 20,
         gameTime: 300,
         respawns: 1,
-        foodCount: 4000,        // 400 × 10
+        foodCount: 5000,        // ⚠️ Кўпайтирилди
         worldCycle: 0,
         special: 'hunger'
     },
@@ -138,7 +138,7 @@ const GAME_MODES = [
         bots: 20,
         gameTime: 300,
         respawns: 1,
-        foodCount: 3000,        // 300 × 10
+        foodCount: 3500,        // ⚠️ Кўпайтирилди
         worldCycle: 0,
         special: 'hunt'
     },
@@ -152,7 +152,7 @@ const GAME_MODES = [
         bots: 5,
         gameTime: 120,
         respawns: 3,
-        foodCount: 4000,        // 400 × 10
+        foodCount: 5000,        // ⚠️ Кўпайтирилди
         worldCycle: 0,
         special: 'speed'
     },
@@ -166,7 +166,7 @@ const GAME_MODES = [
         bots: 10,
         gameTime: 300,
         respawns: 3,
-        foodCount: 3000,        // 300 × 10
+        foodCount: 3500,        // ⚠️ Кўпайтирилди
         worldCycle: 0,
         special: 'night'
     }
@@ -202,3 +202,4 @@ console.log('✅ config.js юкланди');
 console.log('  🎮 Режимлар:', GAME_MODES.length);
 console.log('  🍎 Овқатлар: ×10 кўпайтирилди');
 console.log('  🗺️ Динамик карта: ҳар дақиқада 20% кичраяди');
+

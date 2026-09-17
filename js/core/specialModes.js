@@ -53,11 +53,13 @@ const SpecialModes = {
             }
         }, 30000);  // Ҳар 30 сонияда
 
-        // Овқат камаяди
+        // Очлик режимида овқат секинроқ камаяди
         game.foodReductionInterval = setInterval(() => {
             if (!game.isRunning) return;
-            game.food.items = game.food.items.slice(0, Math.floor(game.food.items.length * 0.9));
-        }, 15000);  // Ҳар 15 сонияда 10% камаяди
+            // Фақат 5% камаяди (аввал 10% эди)
+            const newLength = Math.floor(game.food.items.length * 0.95);
+            game.food.items = game.food.items.slice(0, newLength);
+        }, 15000);
 
         console.log('🍽️ Очлик ўйини: карта кичраяди');
     },
@@ -109,3 +111,4 @@ const SpecialModes = {
 };
 
 console.log('✅ specialModes.js юкланди');
+
