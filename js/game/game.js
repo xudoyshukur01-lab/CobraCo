@@ -118,14 +118,12 @@ const Game = {
     },
 
     async loadTop5() {
-        // Zone ID ни аниқлаш (zone ёки mode)
-        const zoneId = this.zone?.id || this.mode?.id || 'classic';
-
         if (typeof FirebaseDB === 'undefined' || !FirebaseDB.isReady) {
             console.log('⚠️ Firebase йўқ — ТОП-5 ўтказиб юборилди');
             return;
         }
         try {
+            // ⚠️ Дунё рейтингидан олиш
             const top = await FirebaseDB.getLeaderboard('global', 5);
             this.renderTop5(top);
         } catch (e) {
@@ -137,19 +135,42 @@ const Game = {
         const list = document.getElementById('top5List');
         if (!list) return;
         list.innerHTML = '';
+
+        // Ўйинчилар сони
+        if (this.isWorldMode) {
+            const playerCount = GameState.settings.playerCount || 1;
+            const botCount = GameState.settings.bots || 0;
+            const total = playerCount + botCount;
+
+            const info = document.createElement('div');
+            info.style.cssText = 'font-size:10px;color:#94a3b8;text-align:center;padding:3px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:4px;';
+            info.innerHTML = '👥 ' + playerCount + ' + 🤖 ' + botCount + ' = ' + total + '/200';
+            list.appendChild(info);
+        }
+
         const myId = TelegramAuth.user ? TelegramAuth.user.id : 0;
         top.forEach((d, i) => {
             const rank = i + 1;
             const isMe = d.telegramId === myId;
-            const name = d.username ? '@' + d.username : (d.firstName || 'X');
+            const isBot = d.isBot === true;
+
+            let name;
+            if (isBot) {
+                name = '🤖 ' + (d.firstName || 'Бот');
+            } else {
+                name = d.username ? '@' + d.username : (d.firstName || 'X');
+            }
+
             const icons = ['🥇','🥈','🥉','4️⃣','5️⃣'];
             const row = document.createElement('div');
-            row.className = 'top5-item' + (isMe ? ' me' : '');
-            row.innerHTML = '<span class="top5-rank">' + (icons[i] || rank) + '</span><span class="top5-name">' + name + '</span><span class="top5-score">' + d.score + '</span>';
+            row.className = 'top5-item' + (isMe ? ' me' : '') + (isBot ? ' bot' : '');
+            row.innerHTML = '<span class="top5-rank">' + (icons[i] || rank) + '</span>' +
+                           '<span class="top5-name">' + name + '</span>' +
+                           '<span class="top5-score">' + (d.trophies || 0) + '</span>';
             list.appendChild(row);
         });
         if (top.length === 0) {
-            list.innerHTML = '<div style="font-size:10px;color:#64748b;text-align:center;">Ҳали натижа йўқ</div>';
+            list.innerHTML += '<div style="font-size:10px;color:#64748b;text-align:center;">Ҳали натижа йўқ</div>';
         }
     },
 
@@ -274,8 +295,9 @@ const Game = {
             if (eaten) this.handleFoodEaten(s, eaten);
         });
         // ⚠️ Овқатлар етарлими — автоматик тўлдириш
+        // ⚠️ Овқат тўлдириш
         if (this.food.items.length < this.food.targetCount) {
-            this.food.refill(Math.min(50, this.food.targetCount - this.food.items.length));
+            this.food.refill(Math.min(100, this.food.targetCount - this.food.items.length));
         }
         Collision.checkSnakes(this.snakes, this.food);
         if (!this.snake.alive) this.handlePlayerDeath();
@@ -592,7 +614,7 @@ Game.startWorld = function(session, remainingTime) {
     this.isWorldMode = true;
 
     // Карта
-    const mapCfg = MAP_SIZES[String(this.mode.mapSize)] || MAP_SIZES['5000'];
+    const mapCfg = MAP_SIZES[String(this.mode.mapSize)] || MAP_SIZES['1500'];
     this.worldCols = mapCfg.cols;
     this.worldRows = mapCfg.rows;
 
@@ -600,23 +622,23 @@ Game.startWorld = function(session, remainingTime) {
     this.timeLeft = remainingTime;
     GameState.settings.gameTime = remainingTime;
 
-    // Ботлар сони — динамик
+    // ⚠️ Ўйинчилар сони + ботлар = 200
     const playerCount = session.players ? Object.keys(session.players).length : 1;
     const botCount = WorldMode.calculateBots(playerCount);
-    GameState.settings.bots = botCount;
 
-    console.log('🌍 Ўйинчилар:', playerCount, '| Ботлар:', botCount, '| Карта:', this.worldCols + 'x' + this.worldRows);
+    GameState.settings.bots = botCount;
+    GameState.settings.playerCount = playerCount;
+
+    console.log('🌍 Ўйинчилар:', playerCount, '| Ботлар:', botCount, '| Жами:', playerCount + botCount + ' / 200');
+    console.log('🗺️ Карта:', this.worldCols + 'x' + this.worldRows);
 
     // Овқат
     this.food = new FoodManager(this.worldCols, this.worldRows);
-        // Овқат сони режимга қараб кейинроқ
 
-    // Экранни кўрсатиш
     showScreen('gameScreen');
     setTimeout(() => this.resizeCanvas(), 50);
     setTimeout(() => this.resizeCanvas(), 300);
 
-    // Ўйинни тайёрлаш
     this.prepare();
     this.loadTop5();
 
@@ -817,5 +839,8 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js динамик карта (тузатилган)');
+
+
+
 
 

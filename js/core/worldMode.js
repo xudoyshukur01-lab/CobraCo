@@ -1,64 +1,76 @@
 ﻿// ===== Дунё режими логикаси =====
 const WorldMode = {
-    CYCLE_DURATION: 600,        // 10 дақиқа (секунд)
+    CYCLE_DURATION: 600,        // 10 дақиқа
     JOIN_LIMIT: 180,            // Охирги 3 дақиқада кириш мумкин эмас
-    MAX_BOTS: 200,              // Максимал ботлар
-    MIN_BOTS: 20,               // Минимал ботлар
-    MAP_SIZE: 5000,             // Карта ўлчами
+    MAX_PLAYERS: 200,           // ⚠️ 200 ўйинчи лимити
+    MAP_SIZE: 1500,             // Карта ўлчами
+    BOT_MIN: 20,                // Минимал ботлар
+    BOT_MAX: 200,               // Максимал ботлар
 
     currentSession: null,
-    sessionInterval: null,
-    updateInterval: null,
 
-    // ===== Сессия бошлаш/қўшилиш =====
+    // ===== Ўйинчилар сонини ҳисоблаш =====
+    getPlayerCount() {
+        if (!RealtimeDB.isReady || !this.currentSession) return 1;
+        const players = this.currentSession.players || {};
+        return Object.keys(players).length;
+    },
+
+    // ===== Ботлар сонини ҳисоблаш =====
+    // 200 - реал ўйинчилар = ботлар
+    calculateBots(playerCount) {
+        const bots = Math.max(
+            this.BOT_MIN,
+            Math.min(this.BOT_MAX, this.MAX_PLAYERS - playerCount)
+        );
+        console.log('🤖 Ботлар:', bots, '| Ўйинчилар:', playerCount, '| Жами:', bots + playerCount);
+        return bots;
+    },
+
+    // ===== Сессия бошлаш =====
     async start(user) {
         if (!RealtimeDB.isReady) {
             console.warn('⚠️ Realtime DB йўқ — локал режим');
             return this.startLocal(user);
         }
 
-        // Жорий сессияни олиш
         let session = await RealtimeDB.getCurrentSession();
 
         if (!session || !session.active) {
-            // Янги сессия яратиш
             session = await this.createSession();
         }
 
-        // Вақт текшируви
         const elapsed = Math.floor((Date.now() - session.startTime) / 1000);
         const remaining = this.CYCLE_DURATION - elapsed;
 
         if (remaining < this.JOIN_LIMIT) {
-            // Кеч қолди — кейинги сессияни кутиш
             alert('⏰ Кеч қолдингиз!\n\nКейинги ўйин ' + Math.ceil(remaining) + ' сониядан кейин бошланади.');
             return this.waitForNextSession(user);
         }
 
-        // Сессияга қўшилиш
+        // Ўйинчилар сонини текшириш
+        const playerCount = Object.keys(session.players || {}).length;
+        if (playerCount >= this.MAX_PLAYERS) {
+            alert('❌ Ўйин тўлди! (200/200)\n\nКейинги ўйинни кутинг.');
+            return this.waitForNextSession(user);
+        }
+
         await RealtimeDB.joinSession(session.id, user);
         this.currentSession = session;
 
-        // Ўйинни бошлаш
         this.launchGame(session, remaining);
     },
 
-    // ===== Янги сессия яратиш =====
     async createSession() {
         const id = 'world_' + Date.now();
-        const session = {
+        return {
             id: id,
             startTime: Date.now(),
             active: true,
-            players: {},
-            createdAt: firebase.database.ServerValue.TIMESTAMP
+            players: {}
         };
-        // Firebase'га ёзиш — кейинроқ
-        // Ҳозирча локал
-        return session;
     },
 
-    // ===== Кейинги сессияни кутиш =====
     waitForNextSession(user) {
         const checkInterval = setInterval(async () => {
             const session = await RealtimeDB.getCurrentSession();
@@ -69,40 +81,20 @@ const WorldMode = {
         }, 5000);
     },
 
-    // ===== Ўйинни бошлаш =====
     launchGame(session, remainingTime) {
-        console.log('🌍 Дунё ўйини бошланди:', session.id, '| Вақт:', remainingTime, 'сек');
+        console.log('🌍 Дунё ўйини:', session.id, '| Вақт:', remainingTime, 'с');
 
-        // Ўйинни ишга тушириш
         if (typeof Game !== 'undefined') {
             Game.startWorld(session, remainingTime);
         }
     },
 
-    // ===== Локал режим (Firebase йўқ бўлса) =====
     startLocal(user) {
         console.log('🌍 Дунё режими (локал)');
         if (typeof Game !== 'undefined') {
-            Game.startWorld({ id: 'local_' + Date.now() }, this.CYCLE_DURATION);
+            Game.startWorld({ id: 'local_' + Date.now(), players: {} }, this.CYCLE_DURATION);
         }
-    },
-
-    // ===== Ботлар сонини ҳисоблаш =====
-    calculateBots(playerCount) {
-        // Ўйинчилар сонига қараб ботлар
-        const botsNeeded = Math.max(
-            this.MIN_BOTS,
-            this.MAX_BOTS - playerCount * 5
-        );
-        return Math.min(this.MAX_BOTS, botsNeeded);
-    },
-
-    // ===== Сессияни тозалаш =====
-    cleanup() {
-        if (this.sessionInterval) clearInterval(this.sessionInterval);
-        if (this.updateInterval) clearInterval(this.updateInterval);
-        RealtimeDB.cleanup();
     }
 };
 
-console.log('✅ worldMode.js юкланди');
+console.log('✅ worldMode.js юкланди (200 лимит)');

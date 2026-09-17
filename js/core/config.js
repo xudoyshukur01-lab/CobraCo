@@ -71,7 +71,7 @@ const GAME_MODES = [
         bots: 200,
         gameTime: 600,
         respawns: 3,
-        foodCount: 10000,       // ⚠️ Кўпайтирилди (Дунё катта)
+        foodCount: 12000,       // ⚠️ Кўпайтирилди (Дунё катта)
         worldCycle: 600
     },
     {
@@ -202,4 +202,5 @@ console.log('✅ config.js юкланди');
 console.log('  🎮 Режимлар:', GAME_MODES.length);
 console.log('  🍎 Овқатлар: ×10 кўпайтирилди');
 console.log('  🗺️ Динамик карта: ҳар дақиқада 20% кичраяди');
+
 

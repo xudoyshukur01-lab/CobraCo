@@ -37,14 +37,14 @@ class Renderer {
         items.forEach(f => {
             if (!cam.isVisible(f.x, f.y)) return;
             const p = cam.worldToScreen(f.x, f.y);
-            const cx = p.x + this.grid / 2, cy = p.y + this.grid / 2;
+            const cx = p.x + this.grid/2, cy = p.y + this.grid/2;
             const color = f.type ? f.type.color : '#ef4444';
             const emoji = f.type ? f.type.emoji : '🍎';
             this.ctx.shadowColor = color;
             this.ctx.shadowBlur = 10;
             this.ctx.fillStyle = color;
             this.ctx.beginPath();
-            this.ctx.arc(cx, cy, this.grid/2 - 3, 0, Math.PI * 2);
+            this.ctx.arc(cx, cy, this.grid/2 - 3, 0, Math.PI*2);
             this.ctx.fill();
             this.ctx.shadowBlur = 0;
             this.ctx.font = (this.grid - 6) + 'px Arial';
@@ -54,19 +54,18 @@ class Renderer {
         });
     }
 
-    // ===== ИЛОННИ ЧИЗИШ (кўзлар + оёқчалар ҳар доим) =====
+    // ===== ИЛОННИ 5 ҚИСМ БИЛАН ЧИЗИШ =====
     drawSnake(snake) {
         if (!snake.alive) return;
         const cam = this.camera;
         const body = snake.body;
         const L = body.length;
 
-        // Скин — ўйинчи учун танланган, ботлар учун оддий ранг
+        // СКИН — ўйинчи учун танланган, ботлар учун оддий
         let skin;
         if (snake.isPlayer && typeof SKINS !== 'undefined') {
             skin = SKINS.getCurrent();
         } else {
-            // Ботлар учун оддий скин (snake.color дан)
             const c = snake.color;
             skin = {
                 parts: [
@@ -80,8 +79,7 @@ class Renderer {
             };
         }
 
-        // ===== 1. ТАНА ВА ДУМ (орқадан бошинчи) =====
-        // i = L-1 (дум) ... i = 1 (кўзлардан ташқари)
+        // ===== 1. ТАНА + ДУМ + ОЁҚЧАЛАР =====
         for (let i = L - 1; i >= 1; i--) {
             const seg = body[i];
             if (!cam.isVisible(seg.x, seg.y)) continue;
@@ -93,25 +91,21 @@ class Renderer {
             const isTail = (i === L - 1);
 
             if (isTail) {
-                // ДУМ
                 this.drawSkinPart(skin, 4, cx, cy, size * 0.75, snake);
             } else {
-                // ТАНА
                 this.drawSkinPart(skin, 2, cx, cy, size * 0.95, snake);
 
-                // ОЁҚЧАЛАР — ҳар 2-бўғинда (танада)
-                // 3-индексдан бошлаб, ҳар 2 та
+                // Оёқчалар — ҳар 2-бўғинда
                 if (i >= 3 && i % 2 === 1) {
                     this.drawLegs(skin, cx, cy, size, snake);
                 }
-                // Қўшимча: агар илон узун бўлса (5+), 5-индексдан ҳам
                 if (L >= 6 && i >= 5 && i % 2 === 0) {
                     this.drawLegs(skin, cx, cy, size, snake);
                 }
             }
         }
 
-        // ===== 2. БОШ (i = 0) =====
+        // ===== 2. БОШ + КЎЗЛАР =====
         const head = body[0];
         if (cam.isVisible(head.x, head.y)) {
             const p = cam.worldToScreen(head.x, head.y);
@@ -119,66 +113,47 @@ class Renderer {
             const cy = p.y + this.grid / 2;
             const size = this.grid / 2 - 1;
 
-            // Бош
             this.drawSkinPart(skin, 0, cx, cy, size, snake);
-
-            // КЎЗЛАР — ҳар доим бош устида
             this.drawEyes(skin, cx, cy, size, snake);
         }
     }
 
-    // ===== Скин қисмини чизиш =====
     drawSkinPart(skin, partIndex, cx, cy, size, snake) {
         const color = this.getPartColor(skin, partIndex, snake);
         const shape = this.getPartShape(skin, partIndex);
 
         if (partIndex === 0) {
-            // Бош — glow
             this.ctx.shadowColor = color;
             this.ctx.shadowBlur = 12;
         }
-
         SKINS.drawShape(this.ctx, shape, cx, cy, size, color);
         this.ctx.shadowBlur = 0;
     }
 
-    // ===== КЎЗЛАР =====
     drawEyes(skin, cx, cy, size, snake) {
         const color = this.getPartColor(skin, 1, snake);
         const dir = snake.direction || { x: 1, y: 0 };
         SKINS.drawEye(this.ctx, cx, cy, size, color, dir);
     }
 
-    // ===== ОЁҚЧАЛАР =====
     drawLegs(skin, cx, cy, size, snake) {
         const color = this.getPartColor(skin, 3, snake);
         SKINS.drawLeg(this.ctx, cx, cy, size, color, -1);
         SKINS.drawLeg(this.ctx, cx, cy, size, color, +1);
     }
 
-    // ===== Ранг олиш =====
     getPartColor(skin, i, snake) {
-        // Custom ранг (ботлар учун)
         if (skin._customColor && skin.parts[i].colorId === '_custom') {
             return skin._customColor;
         }
+        if (typeof SKINS === 'undefined') return '#4ade80';
         return SKINS.getPartColor(skin, i);
     }
 
     getPartShape(skin, i) {
         if (!skin.parts[i]) return 'round';
+        if (typeof SKINS === 'undefined') return 'round';
         return SKINS.getPartShape(skin, i);
-    }
-
-    roundRect(x, y, w, h, r) {
-        const c = this.ctx;
-        c.beginPath();
-        c.moveTo(x + r, y);
-        c.arcTo(x + w, y, x + w, y + h, r);
-        c.arcTo(x + w, y + h, x, y + h, r);
-        c.arcTo(x, y + h, x, y, r);
-        c.arcTo(x, y, x + w, y, r);
-        c.closePath();
     }
 
     hexToRgba(hex, a) {
@@ -211,68 +186,4 @@ class Renderer {
     }
 }
 
-console.log('✅ renderer.js юкланди (кўзлар + оёқчалар)');
-
-// ===== ТУН РЕЖИМИ УЧУН ҚЎШИМЧА =====
-const _originalClearNight = Renderer.prototype.clear;
-Renderer.prototype.clear = function() {
-    _originalClearNight.call(this);
-    // Тун режимида қўшимча қоронғулик қатлами
-    if (typeof Game !== 'undefined' && Game.nightMode) {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Ўйинчи атрофида ёруғлик доираси
-        if (Game.snake && Game.snake.alive) {
-            const cam = this.camera;
-            const head = Game.snake.getHead();
-            const p = cam.worldToScreen(head.x, head.y);
-            const cx = p.x + this.grid / 2;
-            const cy = p.y + this.grid / 2;
-            const radius = 150;
-
-            // Радиал градиент
-            const gradient = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.9)');
-
-            this.ctx.globalCompositeOperation = 'destination-out';
-            this.ctx.fillStyle = gradient;
-            this.ctx.beginPath();
-            this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.globalCompositeOperation = 'source-over';
-        }
-    }
-};
-
-// ===== КАРТА ЧЕГАРАСИНИ ЧИЗИШ =====
-const _originalDrawGridLines = Renderer.prototype.drawGridLines;
-Renderer.prototype.drawGridLines = function(cols, rows) {
-    _originalDrawGridLines.call(this, cols, rows);
-
-    // Чегара
-    const cam = this.camera;
-    const ctx = this.ctx;
-
-    // Карта доираси
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([10, 5]);
-
-    const left = (0 - cam.x) * this.grid;
-    const top = (0 - cam.y) * this.grid;
-    const right = (cols - cam.x) * this.grid;
-    const bottom = (rows - cam.y) * this.grid;
-
-    ctx.strokeRect(left, top, right - left, bottom - top);
-    ctx.setLineDash([]);
-
-    // Картадан ташқариси — қизил соя
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
-    if (left > 0) ctx.fillRect(0, 0, left, this.canvas.height);
-    if (top > 0) ctx.fillRect(0, 0, this.canvas.width, top);
-    if (right < this.canvas.width) ctx.fillRect(right, 0, this.canvas.width - right, this.canvas.height);
-    if (bottom < this.canvas.height) ctx.fillRect(0, bottom, this.canvas.width, this.canvas.height - bottom);
-};
+console.log('✅ renderer.js юкланди (5 қисмли скин)');

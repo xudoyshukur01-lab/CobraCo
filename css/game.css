@@ -98,3 +98,16 @@
     white-space: nowrap;
     border: 2px solid rgba(255, 255, 255, 0.3);
 }
+
+/* ===== ТОП-5 да ботлар ===== */
+.top5-item.bot {
+    background: rgba(168, 85, 247, 0.15);
+    border-radius: 3px;
+}
+.top5-item.bot .top5-name {
+    color: #c4b5fd;
+    font-style: italic;
+}
+.top5-item.bot .top5-score {
+    color: #c4b5fd;
+}
