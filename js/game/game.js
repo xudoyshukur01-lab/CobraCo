@@ -733,14 +733,15 @@ Game.startMapShrink = function() {
     this.originalWorldRows = this.worldRows;
     this.shrinkStep = 0;
 
+    // ⚠️ Бошланғич овқат сонини сақлаш
+    this.initialFoodCount = this.food.items.length;
+    this.currentFoodTarget = this.initialFoodCount;
+
     console.log('🗺️ Динамик карта бошланди:', this.worldCols + 'x' + this.worldRows,
-                '| Ҳар', CONFIG.SHRINK_INTERVAL / 1000, 'сонияда', CONFIG.SHRINK_PERCENT * 100, '%');
+                '| Овқат:', this.initialFoodCount);
 
     this.shrinkInterval = setInterval(() => {
-        if (!this.isRunning) {
-            console.log('⏸ Ўйин тўхтаган — карта кичрайиши кутилмоқда');
-            return;
-        }
+        if (!this.isRunning) return;
 
         const currentSize = this.worldCols;
         const newSize = Math.max(
@@ -755,16 +756,48 @@ Game.startMapShrink = function() {
 
         this.shrinkStep++;
         const oldSize = currentSize;
+        const shrinkRatio = newSize / oldSize;  // Мисол: 0.8
 
-        // Карта кичраяди
+        // ===== 1. КАРТА КИЧРАЯДИ =====
         this.worldCols = newSize;
         this.worldRows = newSize;
 
-        console.log('🗺️ КАРТА КИЧРАЙДИ:', oldSize + 'x' + oldSize,
-                    '→', newSize + 'x' + newSize,
-                    '(қадам:', this.shrinkStep + ')');
+        // ===== 2. ОВҚАТЛАР КАМАЯДИ =====
+        // Овқат сони картага пропорционал камаяди
+        // Формула: янги = эски × (янги карта / эски карта)²
+        const areaRatio = shrinkRatio * shrinkRatio;  // 0.8² = 0.64
+        const newFoodTarget = Math.max(
+            CONFIG.MIN_FOOD,  // Минимал овқат
+            Math.floor(this.currentFoodTarget * areaRatio)
+        );
 
-        // Барча илонларни мослаш
+        const oldFoodCount = this.food.items.length;
+        this.currentFoodTarget = newFoodTarget;
+        this.food.targetCount = newFoodTarget;
+
+        // Ортиқча овқатларни олиб ташлаш
+        if (this.food.items.length > newFoodTarget) {
+            // Тасодифий олиб ташлаш
+            const toRemove = this.food.items.length - newFoodTarget;
+            for (let i = 0; i < toRemove; i++) {
+                const idx = Math.floor(Math.random() * this.food.items.length);
+                this.food.items.splice(idx, 1);
+            }
+        }
+
+        // Овқатларни янги картага мослаш
+        this.food.cols = newSize;
+        this.food.rows = newSize;
+
+        // Картадан ташқаридаги овқатларни кўчириш
+        this.food.items.forEach(f => {
+            if (f.x >= newSize || f.y >= newSize) {
+                f.x = Math.floor(Math.random() * newSize);
+                f.y = Math.floor(Math.random() * newSize);
+            }
+        });
+
+        // ===== 3. ИЛОНЛАРНИ МОСЛАШ =====
         this.snakes.forEach(s => {
             if (!s.alive) return;
             s.worldCols = newSize;
@@ -778,53 +811,40 @@ Game.startMapShrink = function() {
             });
         });
 
-        // Овқатларни мослаш
-        let removedCount = 0;
-        this.food.items = this.food.items.filter(f => {
-            if (f.x >= newSize || f.y >= newSize) {
-                f.x = Math.floor(Math.random() * newSize);
-                f.y = Math.floor(Math.random() * newSize);
-                removedCount++;
-            }
-            return true;
-        });
-
-        // Овқатларни тўлдириш
-        const targetFood = this.mode?.foodCount || this.food.targetCount || 3000;
-        this.food.targetCount = targetFood;
-        if (this.food.items.length < targetFood) {
-            this.food.refill(targetFood - this.food.items.length);
-        }
-
-        // Камерани мослаш
+        // ===== 4. КАМЕРА МОСЛАШ =====
         if (this.camera) {
             const size = Math.min(this.canvas.width, this.canvas.height) - 4;
             this.camera.updateSize(size, size);
         }
 
-        // Хабар кўрсатиш
-        this.showShrinkMessage(newSize);
+        // ===== 5. ХАБАР КЎРСАТИШ =====
+        this.showShrinkMessage(newSize, oldFoodCount, newFoodTarget);
 
-        // ⚠️ Ҳар сафар console'да кўриш
-        console.log('🍎 Овқатлар:', this.food.items.length, '| target:', targetFood);
+        console.log('🗺️ Карта:', oldSize + '→' + newSize,
+                    '| 🍎 Овқат:', oldFoodCount + '→' + newFoodTarget,
+                    '(қадам:', this.shrinkStep + ')');
     }, CONFIG.SHRINK_INTERVAL);
 };
 
 // ===== КАРТА КИЧРАЙГАНДА ХАБАР =====
-Game.showShrinkMessage = function(newSize) {
+Game.showShrinkMessage = function(newSize, oldFood, newFood) {
     const el = document.getElementById('shrinkMessage');
-    if (!el) {
-        console.log('⚠️ shrinkMessage элементи йўқ');
-        return;
-    }
-    el.textContent = '⚠️ Карта кичрайди: ' + newSize + '×' + newSize;
+    if (!el) return;
+
+    // Хабар матни
+    const foodInfo = (oldFood !== undefined && newFood !== undefined)
+        ? ' · 🍎 ' + oldFood + ' → ' + newFood
+        : '';
+    el.textContent = '⚠️ Карта кичрайди: ' + newSize + '×' + newSize + foodInfo;
     el.style.opacity = '1';
     el.style.display = 'block';
-    setTimeout(() => { el.style.opacity = '0'; }, 2500);
 
-    // Аввалги хабарни тозалаш
+    // Аввалги timeout тозалаш
     if (el._timeout) clearTimeout(el._timeout);
-    el._timeout = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+    el._timeout = setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.display = 'none'; }, 500);
+    }, 3000);
 };
 
 // ===== gameOver да тозалаш =====
@@ -839,6 +859,7 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js динамик карта (тузатилган)');
+
 
 
 

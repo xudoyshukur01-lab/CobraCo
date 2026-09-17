@@ -23,6 +23,7 @@ const CONFIG = {
     SHRINK_INTERVAL: 60000,      // Ҳар 60 сония (1 дақиқа)
     SHRINK_PERCENT: 0.20,        // 20% кичраяди
     MIN_MAP_SIZE: 100,           // Минимал 100×100
+    MIN_FOOD: 200,               // Минимал овқат сони
     MAP_SHRINK_ENABLED: true     // Ёқилган
 };
 
@@ -202,5 +203,6 @@ console.log('✅ config.js юкланди');
 console.log('  🎮 Режимлар:', GAME_MODES.length);
 console.log('  🍎 Овқатлар: ×10 кўпайтирилди');
 console.log('  🗺️ Динамик карта: ҳар дақиқада 20% кичраяди');
+
 
 
