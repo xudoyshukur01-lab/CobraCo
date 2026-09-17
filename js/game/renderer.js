@@ -246,3 +246,33 @@ Renderer.prototype.clear = function() {
         }
     }
 };
+
+// ===== КАРТА ЧЕГАРАСИНИ ЧИЗИШ =====
+const _originalDrawGridLines = Renderer.prototype.drawGridLines;
+Renderer.prototype.drawGridLines = function(cols, rows) {
+    _originalDrawGridLines.call(this, cols, rows);
+
+    // Чегара
+    const cam = this.camera;
+    const ctx = this.ctx;
+
+    // Карта доираси
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 5]);
+
+    const left = (0 - cam.x) * this.grid;
+    const top = (0 - cam.y) * this.grid;
+    const right = (cols - cam.x) * this.grid;
+    const bottom = (rows - cam.y) * this.grid;
+
+    ctx.strokeRect(left, top, right - left, bottom - top);
+    ctx.setLineDash([]);
+
+    // Картадан ташқариси — қизил соя
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+    if (left > 0) ctx.fillRect(0, 0, left, this.canvas.height);
+    if (top > 0) ctx.fillRect(0, 0, this.canvas.width, top);
+    if (right < this.canvas.width) ctx.fillRect(right, 0, this.canvas.width - right, this.canvas.height);
+    if (bottom < this.canvas.height) ctx.fillRect(0, bottom, this.canvas.width, this.canvas.height - bottom);
+};

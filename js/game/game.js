@@ -584,3 +584,122 @@ Game.gameOver = async function(reason) {
 
 console.log('✅ game.js бот кубоклари қўшилди');
 
+
+// ===== ДИНАМИК КАРТА (ҳар дақиқада 20% кичраяди) =====
+Game.startMapShrink = function() {
+    if (!CONFIG.MAP_SHRINK_ENABLED) return;
+
+    // Аввалги интервални тозалаш
+    if (this.shrinkInterval) clearInterval(this.shrinkInterval);
+
+    this.originalWorldCols = this.worldCols;
+    this.originalWorldRows = this.worldRows;
+    this.shrinkStep = 0;
+
+    console.log('🗺️ Динамик карта бошланди:', this.worldCols + 'x' + this.worldRows);
+
+    this.shrinkInterval = setInterval(() => {
+        if (!this.isRunning) return;
+
+        const currentSize = this.worldCols;
+        const newSize = Math.max(
+            CONFIG.MIN_MAP_SIZE,
+            Math.floor(currentSize * (1 - CONFIG.SHRINK_PERCENT))
+        );
+
+        if (newSize === currentSize) {
+            // Минималга етди
+            return;
+        }
+
+        this.shrinkStep++;
+        const oldSize = currentSize;
+
+        // Карта кичраяди
+        this.worldCols = newSize;
+        this.worldRows = newSize;
+
+        // Барча илонларни марказга тортиш (агар ташқарида бўлса)
+        this.snakes.forEach(s => {
+            if (!s.alive) return;
+            s.worldCols = newSize;
+            s.worldRows = newSize;
+
+            // Ҳар бўғинни текшириш
+            s.body.forEach(seg => {
+                if (seg.x >= newSize) {
+                    seg.x = Math.floor(seg.x / oldSize * newSize);
+                }
+                if (seg.y >= newSize) {
+                    seg.y = Math.floor(seg.y / oldSize * newSize);
+                }
+                if (seg.x < 0) seg.x = 0;
+                if (seg.y < 0) seg.y = 0;
+            });
+        });
+
+        // Овқатларни марказга тортиш
+        this.food.items = this.food.items.filter(f => {
+            if (f.x >= newSize || f.y >= newSize) {
+                // Янги жойга кўчириш
+                f.x = Math.floor(Math.random() * newSize);
+                f.y = Math.floor(Math.random() * newSize);
+            }
+            return true;
+        });
+
+        // Овқатларни тўлдириш
+        const foodCount = this.mode?.foodCount || CONFIG.FOOD_INITIAL;
+        if (this.food.items.length < foodCount) {
+            this.food.spawn(foodCount - this.food.items.length);
+        }
+
+        console.log('🗺️ Карта кичрайди:', oldSize + 'x' + oldSize,
+                    '→', newSize + 'x' + newSize,
+                    '(қадам:', this.shrinkStep + ')');
+
+        // Камерани мослаш
+        if (this.camera) {
+            const size = Math.min(this.canvas.width, this.canvas.height) - 4;
+            this.camera.updateSize(size, size);
+        }
+
+        // Ўйинчига хабар
+        if (this.snake && this.snake.alive) {
+            this.showShrinkMessage(newSize);
+        }
+    }, CONFIG.SHRINK_INTERVAL);
+};
+
+// Карта кичрайганда хабар кўрсатиш
+Game.showShrinkMessage = function(newSize) {
+    const el = document.getElementById('shrinkMessage');
+    if (!el) return;
+    el.textContent = '⚠️ Карта кичрайди: ' + newSize + '×' + newSize;
+    el.style.opacity = '1';
+    setTimeout(() => { el.style.opacity = '0'; }, 2500);
+};
+
+// ===== beginPlay да динамик картани ишга тушириш =====
+const _originalBeginPlay = Game.beginPlay;
+Game.beginPlay = function() {
+    _originalBeginPlay.call(this);
+    // Махсус режимлардан кейин
+    setTimeout(() => {
+        if (CONFIG.MAP_SHRINK_ENABLED) {
+            this.startMapShrink();
+        }
+    }, 2000);
+};
+
+// ===== gameOver да тозалаш =====
+const _originalGameOverShrink = Game.gameOver;
+Game.gameOver = async function(reason) {
+    if (this.shrinkInterval) {
+        clearInterval(this.shrinkInterval);
+        this.shrinkInterval = null;
+    }
+    return _originalGameOverShrink.call(this, reason);
+};
+
+console.log('✅ game.js динамик карта қўшилди');
