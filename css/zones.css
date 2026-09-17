@@ -998,3 +998,18 @@
     background: rgba(255,255,255,0.05);
     border-radius: 6px;
 }
+
+/* ===== БОТЛАР РЕЙТИНГДА ===== */
+.rating-row.bot {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(139, 92, 246, 0.05));
+    border-left-color: rgba(168, 85, 247, 0.5);
+}
+.rating-row.bot .rating-name {
+    color: #c4b5fd;
+    font-style: italic;
+}
+.rating-row.bot .rating-trophy {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #c4b5fd;
+}

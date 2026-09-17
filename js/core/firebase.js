@@ -87,6 +87,112 @@ const FirebaseDB = {
     },
 
     // ===== Рейтингга қўшиш (кубок бўйича) =====
+    // ===== БОТ КУБОКЛАРИ =====
+    // Ботлар ҳам кубок йиғади, Firebase'да сақланади
+    async getBotTrophy(botId) {
+        if (!this.isReady) return 0;
+        try {
+            const doc = await this.db.collection('bots').doc(String(botId)).get();
+            if (!doc.exists) return 0;
+            const data = doc.data();
+            return data.trophies || 0;
+        } catch (e) { return 0; }
+    },
+
+    async updateBotTrophy(botId, newTotal, botData) {
+        if (!this.isReady) return;
+        try {
+            await this.db.collection('bots').doc(String(botId)).set({
+                botId: botId,
+                name: botData?.name || 'Бот',
+                trophies: newTotal,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            console.log('🤖 Бот кубоки сақланди:', botId, newTotal);
+        } catch (e) { console.error('❌ updateBotTrophy:', e.message); }
+    },
+
+    // Барча ботларни олиш (рейтингга қўшиш учун)
+    async getBotsLeaderboard(scope, limit = 50) {
+        if (!this.isReady) return [];
+        try {
+            const snap = await this.db.collection('bots')
+                .orderBy('trophies', 'desc')
+                .limit(limit)
+                .get();
+            const bots = [];
+            snap.docs.forEach(doc => {
+                const d = doc.data();
+                bots.push({
+                    isBot: true,
+                    botId: d.botId,
+                    name: d.name || '🤖 Бот',
+                    trophies: d.trophies || 0,
+                    username: 'bot_' + d.botId,
+                    firstName: d.name || 'Бот'
+                });
+            });
+            return bots;
+        } catch (e) { console.error('❌ getBotsLeaderboard:', e.message); return []; }
+    },
+
+    // Ботларни рейтингга қўшиш
+    async addBotsToLeaderboard(scope) {
+        if (!this.isReady) return;
+        try {
+            const bots = await this.getBotsLeaderboard('global', 100);
+            const region = Regions.getRegion();
+            if (!region) return;
+
+            const docId = Regions.getLeaderboardId(scope, region.countryCode, region.region);
+            const ref = this.db.collection('leaderboard').doc(docId).collection('scores');
+
+            for (const bot of bots) {
+                await ref.doc('bot_' + bot.botId).set({
+                    telegramId: 0,
+                    isBot: true,
+                    botId: bot.botId,
+                    username: '',
+                    firstName: bot.name,
+                    lastName: '',
+                    trophies: bot.trophies,
+                    countryCode: region.countryCode,
+                    region: region.region,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            }
+            console.log('🤖 Ботлар рейтингга қўшилди:', bots.length);
+        } catch (e) { console.error('❌ addBotsToLeaderboard:', e.message); }
+    },
+
+    // Рейтингни олиш — ботлар билан
+    async getFullLeaderboard(scope, limit = 100) {
+        if (!this.isReady) return [];
+        const region = Regions.getRegion();
+        if (!region) return [];
+
+        const docId = Regions.getLeaderboardId(scope, region.countryCode, region.region);
+
+        try {
+            const snap = await this.db.collection('leaderboard').doc(docId)
+                .collection('scores')
+                .orderBy('trophies', 'desc')
+                .limit(limit)
+                .get();
+
+            return snap.docs.map(doc => {
+                const d = doc.data();
+                return {
+                    ...d,
+                    displayName: d.isBot ? (d.firstName || '🤖 Бот') :
+                                 (d.username ? '@' + d.username : (d.firstName + ' ' + (d.lastName || '')).trim())
+                };
+            });
+        } catch (e) {
+            console.error('❌ getFullLeaderboard:', e.message);
+            return [];
+        }
+    },
     async addToLeaderboard(scope, trophies) {
         if (!this.isReady || !this.user) return;
         const region = Regions.getRegion();
@@ -110,21 +216,7 @@ const FirebaseDB = {
 
     // ===== Рейтингни олиш (кубок бўйича) =====
     async getLeaderboard(scope, limit = 100) {
-        if (!this.isReady) return [];
-        const region = Regions.getRegion();
-        if (!region) return [];
-        const docId = Regions.getLeaderboardId(scope, region.countryCode, region.region);
-        try {
-            const snap = await this.db.collection('leaderboard').doc(docId)
-                .collection('scores')
-                .orderBy('trophies', 'desc')
-                .limit(limit)
-                .get();
-            return snap.docs.map(doc => doc.data());
-        } catch (e) {
-            console.error('❌ getLeaderboard:', e.message);
-            return [];
-        }
+        return await this.getFullLeaderboard(scope, limit);
     },
 
     // ===== Балл сақлаш (эски мослик учун) =====
@@ -226,3 +318,4 @@ const FirebaseDB = {
 };
 
 console.log('✅ firebase.js юкланди (кубок рейтинги)');
+

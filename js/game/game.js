@@ -543,9 +543,13 @@ console.log('✅ game.js startWorld қўшилди');
 
 
 
-// ===== БОТЛАР КУБОК ЙИҒИШИ =====
-// Ҳар ўйин тугагач, ҳар бот кубок олади/йўқотади
-Game.updateBotTrophies = function() {
+// ===== БОТЛАР КУБОК ЙИҒИШИ (Firebase) =====
+Game.updateBotTrophies = async function() {
+    if (typeof FirebaseDB === 'undefined' || !FirebaseDB.isReady) {
+        console.log('⚠️ Firebase йўқ — бот кубоклари сақланмаяпти');
+        return;
+    }
+
     // Ҳар ботнинг баллига қараб кубок
     const players = this.snakes.map(s => ({
         id: s.id,
@@ -557,26 +561,26 @@ Game.updateBotTrophies = function() {
     // Σ = 0 формула
     const changes = Trophies.calculateChanges(players);
 
-    // Ҳар ботга кубок
-    players.forEach(p => {
+    // Ҳар ботга кубок — Firebase'га
+    for (const p of players) {
         if (p.isBot) {
             const change = changes[p.id] || 0;
-            // Бот кубокини сақлаш (localStorage ёки Firebase)
-            const botRef = 'cobraco_bot_trophy_' + p.id;
-            const current = parseInt(localStorage.getItem(botRef) || '0');
+            const current = await FirebaseDB.getBotTrophy(p.id);
             const newTotal = Math.max(0, current + change);
-            localStorage.setItem(botRef, String(newTotal));
+            await FirebaseDB.updateBotTrophy(p.id, newTotal, { name: p.name });
         }
-    });
+    }
+    console.log('🤖 Бот кубоклари Firebase\'га сақланди');
 };
 
 // gameOver да бот кубокларини янгилаш
 const _originalGameOverBots = Game.gameOver;
 Game.gameOver = async function(reason) {
     if (this.updateBotTrophies) {
-        this.updateBotTrophies();
+        try { await this.updateBotTrophies(); } catch (e) { console.error(e); }
     }
     return _originalGameOverBots.call(this, reason);
 };
 
 console.log('✅ game.js бот кубоклари қўшилди');
+

@@ -1,4 +1,4 @@
-﻿// ===== Рейтинг UI (кубок бўйича) =====
+﻿// ===== Рейтинг UI (кубок бўйича + ботлар) =====
 const RatingUI = {
     currentScope: 'global',
     loading: false,
@@ -48,7 +48,12 @@ const RatingUI = {
         this.loading = true;
 
         try {
-            const data = await FirebaseDB.getLeaderboard(this.currentScope, 100);
+            // Ботларни ҳам қўшиш
+            if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
+                await FirebaseDB.addBotsToLeaderboard(this.currentScope);
+            }
+
+            const data = await FirebaseDB.getFullLeaderboard(this.currentScope, 100);
             list.innerHTML = '';
 
             if (!data || data.length === 0) {
@@ -61,15 +66,21 @@ const RatingUI = {
 
             data.forEach((d, i) => {
                 const rank = i + 1;
-                const isMe = d.telegramId === myId;
-                const name = d.username ? '@' + d.username : `${d.firstName||''} ${d.lastName||''}`.trim() || 'Фойдаланувчи';
+                const isMe = !d.isBot && d.telegramId === myId;
+                const isBot = d.isBot === true;
 
-                // Кубокни олиш
+                let name;
+                if (isBot) {
+                    name = '🤖 ' + (d.firstName || 'Бот');
+                } else {
+                    name = d.username ? '@' + d.username : (d.firstName + ' ' + (d.lastName || '')).trim();
+                }
+
                 const trophies = d.trophies || 0;
                 const rankInfo = Trophies.getRank(trophies);
 
                 const row = document.createElement('div');
-                row.className = 'rating-row' + (isMe ? ' me' : '') + (rank <= 3 ? ' top' + rank : '');
+                row.className = 'rating-row' + (isMe ? ' me' : '') + (isBot ? ' bot' : '') + (rank <= 3 ? ' top' + rank : '');
                 row.innerHTML = `
                     <div class="rating-rank">${rank}</div>
                     <div class="rating-info">
@@ -88,4 +99,4 @@ const RatingUI = {
     }
 };
 
-console.log('✅ rating.js юкланди (кубок бўйича)');
+console.log('✅ rating.js юкланди (ботлар билан)');
