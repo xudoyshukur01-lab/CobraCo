@@ -1013,3 +1013,85 @@
     border-color: rgba(168, 85, 247, 0.5);
     color: #c4b5fd;
 }
+
+/* ===== ГУРУҲГА ТАКЛИФ ===== */
+.group-invite-box {
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.2), rgba(34, 211, 238, 0.15));
+    border: 2px solid rgba(74, 222, 128, 0.5);
+    border-radius: 16px;
+    padding: 15px;
+    text-align: center;
+    margin: 15px 0;
+    box-shadow: 0 4px 25px rgba(74, 222, 128, 0.3);
+}
+.group-invite-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #4ade80;
+    margin-bottom: 8px;
+}
+.group-invite-code {
+    font-size: 14px;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+}
+.group-invite-code strong {
+    font-size: 20px;
+    color: #22d3ee;
+    letter-spacing: 3px;
+    font-family: 'Courier New', monospace;
+}
+.group-invite-hint {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ===== ГУРУҲ УЛАШИШ ТУГМАЛАРИ ===== */
+.group-share-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.group-share-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.group-share-btn.primary {
+    background: linear-gradient(135deg, #4ade80, #22d3ee);
+    color: #0f172a;
+    border-color: #4ade80;
+    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
+}
+.group-share-btn.primary:hover, .group-share-btn.primary:active {
+    transform: scale(0.97);
+    box-shadow: 0 6px 30px rgba(74, 222, 128, 0.6);
+}
+.group-share-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+.group-share-btn.secondary:hover, .group-share-btn.secondary:active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    transform: scale(0.97);
+}
+
+/* Гуруҳ коди каттароқ */
+.group-code-value {
+    font-size: 42px !important;
+    letter-spacing: 10px !important;
+    margin-bottom: 10px !important;
+}

@@ -32,13 +32,15 @@ const ModesUI = {
                 <div class="mode-badge" style="background:${mode.color};">▶</div>
             `;
 
-            card.addEventListener('click', () => this.selectMode(mode));
+            card.addEventListener('click', () => {
+                console.log('🎮 Режим танланди:', mode.id);
+                this.selectMode(mode);
+            });
             list.appendChild(card);
         });
     },
 
     selectMode(mode) {
-        console.log('🎮 Режим танланди:', mode.id);
         GameState.mode = mode;
 
         // Гуруҳ — алоҳида экран
@@ -47,22 +49,37 @@ const ModesUI = {
             return;
         }
 
-        // Классик — созламалар билан
-        if (mode.id === 'classic') {
-            showScreen('settingsScreen');
+        // Турнир — турнир экранига
+        if (mode.id === 'tournament') {
+            if (typeof TournamentUI !== 'undefined') TournamentUI.open();
             return;
         }
 
-        // Дунё ва Турнир — дарҳол бошлаш
-        if (typeof Game !== 'undefined') {
+        // Дунё — WorldMode орқали
+        if (mode.id === 'world') {
+            if (typeof WorldMode !== 'undefined' && TelegramAuth.user) {
+                WorldMode.start(TelegramAuth.user);
+            } else if (typeof Game !== 'undefined') {
+                Game.startMode(mode);
+            }
+            return;
+        }
+
+        // ⚠️ КЛАССИК ва бошқа режимлар — дарҳол ўйинга
+        console.log('🚀 Ўйин бошланмоқда:', mode.id);
+
+        // Default созламалар
+        GameState.settings.bots = mode.bots || 15;
+        GameState.settings.gameTime = mode.gameTime || 180;
+        GameState.settings.mapSize = mode.mapSize || 300;
+
+        if (typeof Game !== 'undefined' && Game.startMode) {
             Game.startMode(mode);
+        } else {
+            console.error('❌ Game.startMode топилмади');
+            alert('Хато: Game.startMode топилмади');
         }
     }
 };
 
-console.log('✅ modes.js юкланди');
-
-
-
-
-
+console.log('✅ modes.js юкланди (тузатилган)');

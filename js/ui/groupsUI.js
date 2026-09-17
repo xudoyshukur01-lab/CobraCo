@@ -11,8 +11,8 @@ const GroupsUI = {
         document.getElementById('joinGroupBtn')?.addEventListener('click', () => this.showJoinDialog());
         document.getElementById('groupStartBtn')?.addEventListener('click', () => this.startGroupGame());
         document.getElementById('groupLeaveBtn')?.addEventListener('click', () => this.leaveGroup());
-
-        // Modal тугмалари
+        document.getElementById('groupShareBtn')?.addEventListener('click', () => this.shareGroup());
+        document.getElementById('groupCopyBtn')?.addEventListener('click', () => this.copyCode());
         document.getElementById('confirmCreateBtn')?.addEventListener('click', () => this.createGroup());
         document.getElementById('confirmJoinBtn')?.addEventListener('click', () => this.joinGroup());
         document.getElementById('cancelCreateBtn')?.addEventListener('click', () => this.closeModal('createModal'));
@@ -47,7 +47,6 @@ const GroupsUI = {
         document.getElementById('groupRoom').style.display = 'block';
     },
 
-    // ===== Модаллар =====
     showCreateDialog() {
         document.getElementById('createModal').classList.add('active');
     },
@@ -60,7 +59,6 @@ const GroupsUI = {
         document.getElementById(id).classList.remove('active');
     },
 
-    // ===== Гуруҳ яратиш =====
     async createGroup() {
         const id = Groups.generateId();
         const user = TelegramAuth.user;
@@ -74,13 +72,14 @@ const GroupsUI = {
             Groups.saveCurrent(id);
             this.closeModal('createModal');
             this.loadGroup(id);
-            alert('✅ Гуруҳ яратилди!\n\nКод: ' + id + '\n\nДўстларингизга юборинг!');
+
+            // Автоматик улашиш диалоги
+            setTimeout(() => this.shareGroup(), 800);
         } catch (e) {
             alert('Хато: ' + e.message);
         }
     },
 
-    // ===== Гуруҳга қўшилиш =====
     async joinGroup() {
         const input = document.getElementById('joinCodeInput');
         const code = Groups.formatGroupCode(input.value);
@@ -111,16 +110,16 @@ const GroupsUI = {
         }
     },
 
-    // ===== Гуруҳни юклаш =====
     async loadGroup(groupId) {
         this.currentGroupId = groupId;
         this.showGroupRoom();
 
-        document.getElementById('groupCodeDisplay').textContent = groupId;
+        const codeEl = document.getElementById('groupCodeDisplay');
+        if (codeEl) codeEl.textContent = groupId;
+
         this.updateMembersList();
         this.updateGroupRating();
 
-        // Real-time янгиланиш
         if (this.unsubscribe) this.unsubscribe();
         this.unsubscribe = FirebaseDB.subscribeGroup(groupId, (group) => {
             if (!group) {
@@ -184,18 +183,85 @@ const GroupsUI = {
                 `;
                 el.appendChild(row);
             });
-        } catch (e) {
-            console.error(e);
+        } catch (e) { console.error(e); }
+    },
+
+    // ===== УЛАШИШ =====
+    shareGroup() {
+        if (!this.currentGroupId) return;
+
+        const code = this.currentGroupId;
+        const botUsername = 'cobraco_bot';  // ⚠️ Ўзгартиринг
+        const deepLink = `https://t.me/${botUsername}?start=group_${code}`;
+
+        const shareText = `🎮 CobraCo — Дўстлар билан ўйнаймиз!\n\n` +
+                         `Гуруҳ коди: ${code}\n\n` +
+                         `Қўшилиш:\n` +
+                         `1. @${botUsername} ни очинг\n` +
+                         `2. 👥 Гуруҳ → Кодни киритинг\n` +
+                         `3. Код: ${code}\n\n` +
+                         `Ёки тўғридан-тўғри: ${deepLink}`;
+
+        // Telegram WebApp share
+        if (window.Telegram?.WebApp) {
+            const tg = window.Telegram.WebApp;
+
+            // Telegram'нинг ўз share функцияси
+            if (tg.openTelegramLink) {
+                // Расмий усул — Telegram share
+                const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent('🎮 CobraCo ўйинига қўшилинг! Гуруҳ коди: ' + code)}`;
+                tg.openTelegramLink(shareUrl);
+                console.log('✅ Telegram share очилди');
+                return;
+            }
+        }
+
+        // Fallback — кўчириш
+        this.copyToClipboard(shareText);
+        alert('📋 Матн нусхаланди!\n\nДўстларингизга юборинг:\n\n' + shareText);
+    },
+
+    // ===== КОД НУСХАЛАШ =====
+    copyCode() {
+        if (!this.currentGroupId) return;
+        this.copyToClipboard(this.currentGroupId);
+        alert('📋 Код нусхаланди: ' + this.currentGroupId);
+    },
+
+    copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log('✅ Нусхаланди:', text);
+            }).catch(err => {
+                console.error('❌ Нусхалаш хато:', err);
+                this.fallbackCopy(text);
+            });
+        } else {
+            this.fallbackCopy(text);
         }
     },
 
-    // ===== Гуруҳ ўйинини бошлаш =====
+    fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            console.log('✅ Нусхаланди (fallback)');
+        } catch (e) {
+            console.error('❌ Нусхалаш хато:', e);
+        }
+        document.body.removeChild(textarea);
+    },
+
     startGroupGame() {
         if (!this.currentGroupId) return;
         Game.startGroup(this.currentGroupId);
     },
 
-    // ===== Гуруҳдан чиқиш =====
     async leaveGroup() {
         if (!confirm('Гуруҳдан чиқмоқчимисиз?')) return;
         const user = TelegramAuth.user;
@@ -208,4 +274,4 @@ const GroupsUI = {
     }
 };
 
-console.log('✅ groupsUI.js юкланди');
+console.log('✅ groupsUI.js юкланди (улашиш)');

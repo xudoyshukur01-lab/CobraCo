@@ -66,30 +66,49 @@ const Game = {
     },
 
     startMode(mode) {
-        console.log('🎮 Режим бошланди:', mode.id);
+        console.log('🎮 startMode чақирилди:', mode.id);
+
+        if (!mode) {
+            console.error('❌ Mode йўқ');
+            return;
+        }
+
         this.mode = mode;
         this.zone = null;
 
+        // Карта ўлчами
         const mapCfg = MAP_SIZES[String(mode.mapSize)] || MAP_SIZES['500'];
         this.worldCols = mapCfg.cols;
         this.worldRows = mapCfg.rows;
 
-        GameState.settings.bots = mode.bots;
-        GameState.settings.gameTime = mode.gameTime;
-        GameState.settings.mapSize = mode.mapSize;
+        console.log('🗺️ Карта:', this.worldCols + 'x' + this.worldRows);
 
+        // Созламалар
+        GameState.settings.bots = mode.bots || 3;
+        GameState.settings.gameTime = mode.gameTime || 180;
+        GameState.settings.mapSize = mode.mapSize || 500;
+
+        // Овқат
         this.food = new FoodManager(this.worldCols, this.worldRows);
 
+        // Экранни кўрсатиш
         showScreen('gameScreen');
+
+        // Canvas мослаш
         setTimeout(() => this.resizeCanvas(), 50);
         setTimeout(() => this.resizeCanvas(), 300);
+        setTimeout(() => this.resizeCanvas(), 600);
 
+        // Ўйинни тайёрлаш
         this.prepare();
         this.loadTop5();
 
+        // Махсус режим
         if (mode.special && typeof SpecialModes !== 'undefined') {
             setTimeout(() => SpecialModes.setup(mode, this), 100);
         }
+
+        console.log('✅ Ўйин тайёр');
     },
 
     startWorld(session, remainingTime) {
@@ -648,3 +667,4 @@ const Game = {
 };
 
 console.log('✅ game.js юкланди (тузатилган)');
+
