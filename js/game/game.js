@@ -117,14 +117,19 @@ const Game = {
     },
 
     async loadTop5() {
+        // Zone ID ни аниқлаш (zone ёки mode)
+        const zoneId = this.zone?.id || this.mode?.id || 'classic';
+
         if (typeof FirebaseDB === 'undefined' || !FirebaseDB.isReady) {
             console.log('⚠️ Firebase йўқ — ТОП-5 ўтказиб юборилди');
             return;
         }
         try {
-            const top = await FirebaseDB.getLeaderboard(this.zone.id, 5);
+            const top = await FirebaseDB.getLeaderboard('global', 5);
             this.renderTop5(top);
-        } catch (e) { console.error('❌ loadTop5:', e); }
+        } catch (e) {
+            console.error('❌ loadTop5:', e.message);
+        }
     },
 
     renderTop5(top) {
@@ -152,7 +157,19 @@ const Game = {
         this.score = 0;
         this.respawnsLeft = CONFIG.MAX_RESPAWNS;
         this.isOver = false;
-        this.baseSpeed = CONFIG.BASE_SPEED * (this.zone.speedMultiplier || 1);
+
+        // Режимга қараб тезлик
+        let speedMultiplier = 1.0;
+        if (this.mode) {
+            // Махсус режимлар
+            if (this.mode.id === 'speed') {
+                speedMultiplier = 2.0;
+            }
+        } else if (this.zone) {
+            speedMultiplier = this.zone.speedMultiplier || 1.0;
+        }
+
+        this.baseSpeed = CONFIG.BASE_SPEED / speedMultiplier;
         this.speed = this.baseSpeed;
         this.timeLeft = GameState.settings.gameTime;
 
@@ -163,56 +180,42 @@ const Game = {
 
         this.playerTrophies = Storage.getTrophies();
 
+        // Ўйинчи ранги
+        let playerColor = '#4ade80';
+        if (this.zone) playerColor = this.zone.color;
+        else if (this.mode) playerColor = this.mode.color;
+
         this.snake = new Snake({
-            id:'player', isPlayer:true, color:this.zone.color, name:'Сиз',
+            id:'player', isPlayer:true, color:playerColor, name:'Сиз',
             worldCols:this.worldCols, worldRows:this.worldRows,
             startX: Math.floor(this.worldCols/2), startY: Math.floor(this.worldRows/2), length:5
         });
         this.snakes.push(this.snake);
 
-        // ===== ДАРАЖАЛИ БОТЛАР =====
-        // Ўйинчи кубогига қараб ботлар даражасини аниқлаш
-        const playerTrophies = this.playerTrophies || 0;
-        const difficulty = getBotDifficulty(playerTrophies);
-        const difficultyColors = {
-            'easy':      '#84cc16',  // Лайм
-            'medium':    '#22d3ee',  // Кўк
-            'hard':      '#fbbf24',  // Сариқ
-            'expert':    '#f97316',  // Оранж
-            'legendary': '#ef4444'   // Қизил
-        };
-        const difficultyEmoji = {
-            'easy':      '🟢',
-            'medium':    '🔵',
-            'hard':      '🟡',
-            'expert':    '🟠',
-            'legendary': '🔴'
-        };
+        // Ботлар
+        const colors = ['#ef4444','#fbbf24','#a78bfa','#22d3ee','#f472b6','#84cc16','#f97316','#06b6d4','#8b5cf6','#ec4899'];
+        const botNames = ['Аждар','Кобра','Питон','Анаконда','Гюрза','Мамба','Випера','Удав','Тайпан','Боа'];
 
-        const botNames = BOT_NAMES[difficulty] || BOT_NAMES.medium;
-
-        for (let i = 0; i < GameState.settings.bots; i++) {
+        const botCount = GameState.settings.bots || 3;
+        for (let i = 0; i < botCount; i++) {
             const b = new Snake({
                 id:'bot_'+i, isPlayer:false,
-                color:difficultyColors[difficulty] || '#ef4444',
-                name:difficultyEmoji[difficulty] + ' ' + botNames[i % botNames.length],
+                color:colors[i%colors.length],
+                name:botNames[i % botNames.length],
                 worldCols:this.worldCols, worldRows:this.worldRows,
                 startX: Math.floor(Math.random()*this.worldCols),
                 startY: Math.floor(Math.random()*this.worldRows),
                 length: 5 + Math.floor(Math.random()*5)
             });
             this.snakes.push(b);
-            this.bots.push(new BotController(b, this, difficulty));
+            this.bots.push(new BotController(b, this, 'medium'));
         }
-
-        console.log('🤖 Ботлар даражаси:', difficulty,
-                    '| Ўйинчи кубоги:', playerTrophies);
 
         this.food.spawn(CONFIG.FOOD_INITIAL);
         this.camera.x = this.snake.getHead().x - (this.canvas.width / CONFIG.GRID) / 2;
         this.camera.y = this.snake.getHead().y - (this.canvas.height / CONFIG.GRID) / 2;
         this.render();
-        this.showOverlay('🐍 ' + this.zone.name, 'Бошлаш учун тугмани босинг', 'Бошлаш');
+        this.showOverlay('🐍 ' + (this.zone?.name || this.mode?.name || 'Ўйин'), 'Бошлаш учун тугмани босинг', 'Бошлаш');
     },
 
     beginPlay() {
@@ -324,10 +327,10 @@ const Game = {
         clearInterval(this.timerInterval);
         clearInterval(this.top5Interval);
 
-        Storage.setBest(this.zone.id, this.score);
+        Storage.setBest(this.zone?.id || this.mode?.id || 'classic', this.score);
 
         if (typeof FirebaseDB !== 'undefined' && FirebaseDB.isReady) {
-            await FirebaseDB.saveScore(this.zone.id, this.score);
+            await FirebaseDB.saveScore(this.zone?.id || this.mode?.id || 'classic', this.score);
         }
 
         const players = this.snakes.map(s => ({
@@ -529,4 +532,6 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js startWorld қўшилди');
+
+
 

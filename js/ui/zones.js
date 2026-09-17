@@ -1,36 +1,31 @@
 ﻿// ===== Меню UI =====
 const ZonesUI = {
     init() {
-        // Кубок карточкаси — босилганда рейтингга
         document.getElementById('trophyCard')?.addEventListener('click', () => {
             if (typeof RatingUI !== 'undefined') RatingUI.open();
         });
-
-        // Кристалл карточкаси — чемпионатга
         document.getElementById('crystalCard')?.addEventListener('click', () => {
             if (typeof ChampionshipUI !== 'undefined') ChampionshipUI.open();
         });
-
-        // Созламалар
         document.getElementById('settingsBtn')?.addEventListener('click', () => {
             showScreen('settingsScreen');
         });
-
-        // Гуруҳ
         document.getElementById('groupsBtn')?.addEventListener('click', () => {
             if (typeof GroupsUI !== 'undefined') GroupsUI.open();
         });
-
-        // Чемпионат
         document.getElementById('championshipBtn')?.addEventListener('click', () => {
             if (typeof ChampionshipUI !== 'undefined') ChampionshipUI.open();
         });
-
-        // Ўйинни бошлаш
         document.getElementById('modesBtn')?.addEventListener('click', () => {
             if (typeof ModesUI !== 'undefined') ModesUI.open();
         });
 
+        this.render();
+        this.updateTrophyDisplay();
+    },
+
+    render() {
+        // Бу функция энди бўш — меню статик
         this.updateTrophyDisplay();
     },
 
@@ -39,9 +34,16 @@ const ZonesUI = {
         const icon = document.getElementById('trophyIcon');
         const count = document.getElementById('trophyCount');
         const name = document.getElementById('trophyRank');
-        if (icon) icon.textContent = '🥉';
+
+        let rankIcon = '🥉', rankName = 'Бронза';
+        if (trophies >= 10000) { rankIcon = '👑'; rankName = 'Афсонавий'; }
+        else if (trophies >= 5000) { rankIcon = '💎'; rankName = 'Олмос'; }
+        else if (trophies >= 2000) { rankIcon = '🥇'; rankName = 'Олтин'; }
+        else if (trophies >= 500) { rankIcon = '🥈'; rankName = 'Кумуш'; }
+
+        if (icon) icon.textContent = rankIcon;
         if (count) count.textContent = trophies;
-        if (name) name.textContent = 'Бронза';
+        if (name) name.textContent = rankName;
     }
 };
 
