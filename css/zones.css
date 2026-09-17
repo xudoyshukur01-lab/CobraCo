@@ -902,3 +902,99 @@
     color: #4ade80;
     flex-shrink: 0;
 }
+
+/* ===== ТУРНИР ЭКРАНИ ===== */
+.tourney-stats {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding: 0 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+.tourney-stat {
+    flex: 1;
+    min-width: 100px;
+    max-width: 150px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.05));
+    border: 2px solid rgba(251,191,36,0.4);
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+}
+.tourney-stat-label {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.tourney-stat-value {
+    display: block;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+.bracket-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 0 10px;
+}
+.bracket-round {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    border-radius: 16px;
+    padding: 15px;
+    border: 1px solid rgba(74,222,128,0.2);
+}
+.bracket-round h3 {
+    font-size: 15px;
+    color: #4ade80;
+    margin-bottom: 12px;
+    text-align: center;
+    font-weight: 800;
+}
+.bracket-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.bracket-match {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    border-left: 3px solid rgba(74,222,128,0.3);
+}
+.bracket-match.done {
+    border-left-color: #fbbf24;
+    background: rgba(251,191,36,0.08);
+}
+.bracket-player {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #cbd5e1;
+}
+.bracket-player.winner {
+    color: #4ade80;
+    font-weight: 800;
+}
+.bracket-vs {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 700;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+}

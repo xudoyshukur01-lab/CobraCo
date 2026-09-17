@@ -142,7 +142,46 @@
                 <button id="settingsBtn" class="menu-btn">⚙️ Созламалар</button>
             </div>
         </div>
+    </div>    <div id="tournamentScreen" class="screen">
+        <div class="top-bar">
+            <button class="back-icon" id="tournamentBackBtn">←</button>
+            <h2>🏆 Турнир</h2>
+        </div>
+
+        <div id="tournamentEmpty" style="display:none;">
+            <p style="text-align:center;color:#94a3b8;padding:40px 20px;">
+                Ҳозирча фаол турнир йўқ.<br><br>
+                Янги турнир бошлаш учун қўшилинг!
+            </p>
+            <button id="tournamentJoinBtn" class="big-btn" style="max-width:400px;margin:0 auto;display:block;">
+                ➕ Янги турнир яратиш
+            </button>
+        </div>
+
+        <div id="tournamentBracket" style="display:none;">
+            <div class="tourney-stats">
+                <div class="tourney-stat">
+                    <span class="tourney-stat-label">Ўйинчилар</span>
+                    <span class="tourney-stat-value" id="tourneyPlayers">0 / 32</span>
+                </div>
+                <div class="tourney-stat">
+                    <span class="tourney-stat-label">Раунд</span>
+                    <span class="tourney-stat-value" id="tourneyRound">1/16 финал</span>
+                </div>
+                <div class="tourney-stat">
+                    <span class="tourney-stat-label">Ҳолат</span>
+                    <span class="tourney-stat-value" id="tourneyStatus">🟢 Фаол</span>
+                </div>
+            </div>
+
+            <button id="tournamentJoinBtn" class="big-btn" style="max-width:400px;margin:15px auto;display:block;">
+                ➕ Турнирга қўшилиш
+            </button>
+
+            <div id="bracketContent" class="bracket-content"></div>
+        </div>
     </div>
+
 
     <div id="settingsScreen" class="screen">
         <div class="top-bar">
@@ -288,6 +327,7 @@
     <script src="js/core/realtime.js"></script>
     <script src="js/core/firebase.js"></script>
     <script src="js/core/skins.js"></script>
+    <script src="js/core/tournament.js"></script>
     <script src="js/core/worldMode.js"></script>
     <script src="js/core/trophies.js"></script>
 
@@ -300,6 +340,7 @@
     <script src="js/game/input.js"></script>
     <script src="js/game/game.js"></script>
 
+    <script src="js/ui/tournamentUI.js"></script>
     <script src="js/ui/modes.js"></script>
     <script src="js/ui/zones.js"></script>
     <script src="js/ui/settings.js"></script>
@@ -313,6 +354,7 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
 
 
 

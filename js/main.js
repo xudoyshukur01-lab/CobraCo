@@ -23,6 +23,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     Game.init();
     ZonesUI.init();
     if (typeof ModesUI !== 'undefined') ModesUI.init();
+    if (typeof TournamentUI !== 'undefined') TournamentUI.init();
     SettingsUI.init();
     RatingUI.init();
     RegionsUI.init();
@@ -88,6 +89,7 @@ function showUserRegion() {
     const flag = Regions.getCountryFlag(region.countryCode);
     el.innerHTML = `${flag} ${region.region}`;
 }
+
 
 
 
