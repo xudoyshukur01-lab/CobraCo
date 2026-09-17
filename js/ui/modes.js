@@ -27,7 +27,7 @@ const ModesUI = {
                 <div class="mode-info">
                     <h3>${mode.name}</h3>
                     <p>${mode.desc}</p>
-                    <p class="mode-best">Рекорд: ${best}</p>
+                    <p class="mode-best">🗺️ ${mode.mapSize}×${mode.mapSize} · 🍎 ${mode.foodCount} · Рекорд: ${best}</p>
                 </div>
                 <div class="mode-badge" style="background:${mode.color};">▶</div>
             `;
@@ -61,6 +61,7 @@ const ModesUI = {
 };
 
 console.log('✅ modes.js юкланди');
+
 
 
 

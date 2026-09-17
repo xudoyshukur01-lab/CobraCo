@@ -1,6 +1,6 @@
 ﻿// ===== CobraCo - Асосий созламалар =====
 const CONFIG = {
-    VERSION: '2.0.0',
+    VERSION: '2.1.0',
     GRID: 20,
     BASE_SPEED: 150,
     MIN_SPEED: 70,
@@ -13,9 +13,9 @@ const CONFIG = {
     EAT_PERCENT: 50,
     SPREAD_PERCENT: 50,
     MIN_SNAKE_LENGTH: 3,
-    FOOD_INITIAL: 150,
-    FOOD_MIN: 100,
-    FOOD_SPAWN_BATCH: 20,
+    FOOD_INITIAL: 200,
+    FOOD_MIN: 150,
+    FOOD_SPAWN_BATCH: 30,
     TOP5_UPDATE_INTERVAL: 10000,
     MAX_TROPHY_CHANGE: 30
 };
@@ -41,6 +41,8 @@ function pickRandomFoodType() {
 }
 
 // ===== ЎЙИН РЕЖИМЛАРИ =====
+// 🗺️ Карталар кичрайтирилди
+// 🍎 Овқатлар кўпайтирилди
 const GAME_MODES = [
     {
         id: 'classic',
@@ -48,11 +50,12 @@ const GAME_MODES = [
         emoji: '🎯',
         desc: '15 ўйинчи, 3 ҳаёт, 2-5 дақиқа',
         color: '#4ade80',
-        mapSize: 500,
+        mapSize: 300,        // ⚠️ 500 → 300
         bots: 15,
         gameTime: 180,
         respawns: 3,
-        worldCycle: 0,  // Йўқ
+        foodCount: 250,      // ⚠️ Янги
+        worldCycle: 0,
         minPlayers: 0,
         maxPlayers: 15
     },
@@ -62,11 +65,12 @@ const GAME_MODES = [
         emoji: '🌍',
         desc: '1000+ ўйинчи, 200 бот, 10 дақиқа',
         color: '#22d3ee',
-        mapSize: 5000,
+        mapSize: 1500,       // ⚠️ 5000 → 1500
         bots: 200,
         gameTime: 600,
         respawns: 3,
-        worldCycle: 600,  // 10 дақиқа
+        foodCount: 600,      // ⚠️ Янги
+        worldCycle: 600,
         minPlayers: 0,
         maxPlayers: 9999
     },
@@ -76,10 +80,11 @@ const GAME_MODES = [
         emoji: '🏆',
         desc: '32 ўйинчи, 1/16, 1/8, 1/4, 1/2, финал',
         color: '#fbbf24',
-        mapSize: 1000,
+        mapSize: 500,        // ⚠️ 1000 → 500
         bots: 0,
         gameTime: 300,
         respawns: 1,
+        foodCount: 200,      // ⚠️ Янги
         worldCycle: 0,
         minPlayers: 32,
         maxPlayers: 32
@@ -90,24 +95,26 @@ const GAME_MODES = [
         emoji: '👥',
         desc: 'Дўстлар билан, гуруҳ коди орқали',
         color: '#a855f7',
-        mapSize: 1000,
+        mapSize: 400,        // ⚠️ 1000 → 400
         bots: 0,
         gameTime: 300,
         respawns: 3,
+        foodCount: 200,
         worldCycle: 0,
         minPlayers: 2,
         maxPlayers: 20
-    }    ,
+    },
     {
         id: 'zombie',
         name: 'Зомби',
         emoji: '🧟',
         desc: '50+ секин бот, ҳаммаси ҳужум қилади',
         color: '#84cc16',
-        mapSize: 1000,
+        mapSize: 500,        // ⚠️ 1000 → 500
         bots: 50,
         gameTime: 300,
         respawns: 1,
+        foodCount: 350,      // ⚠️ Янги
         worldCycle: 0,
         special: 'zombie'
     },
@@ -117,10 +124,11 @@ const GAME_MODES = [
         emoji: '🍽️',
         desc: '24 ўйинчи, 1 ғолиб, карта кичраяди',
         color: '#f97316',
-        mapSize: 1000,
+        mapSize: 600,        // ⚠️ 1000 → 600
         bots: 20,
         gameTime: 300,
         respawns: 1,
+        foodCount: 400,      // ⚠️ Янги
         worldCycle: 0,
         special: 'hunger'
     },
@@ -130,10 +138,11 @@ const GAME_MODES = [
         emoji: '🎯',
         desc: 'Сиз катта илон, 20 кичик ов',
         color: '#ec4899',
-        mapSize: 1000,
+        mapSize: 800,        // ⚠️ 1000 → 800
         bots: 20,
         gameTime: 300,
         respawns: 1,
+        foodCount: 300,      // ⚠️ Янги
         worldCycle: 0,
         special: 'hunt'
     },
@@ -143,10 +152,11 @@ const GAME_MODES = [
         emoji: '⚡',
         desc: '2х тезлик, кичик карта, 300 овқат',
         color: '#fbbf24',
-        mapSize: 200,
+        mapSize: 150,        // ⚠️ 200 → 150
         bots: 5,
         gameTime: 120,
         respawns: 3,
+        foodCount: 400,      // ⚠️ Янги
         worldCycle: 0,
         special: 'speed'
     },
@@ -156,10 +166,11 @@ const GAME_MODES = [
         emoji: '🌙',
         desc: 'Қоронғу, фақат яқин атроф кўринади',
         color: '#a855f7',
-        mapSize: 1000,
+        mapSize: 500,        // ⚠️ 1000 → 500
         bots: 10,
         gameTime: 300,
         respawns: 3,
+        foodCount: 300,      // ⚠️ Янги
         worldCycle: 0,
         special: 'night'
     }
@@ -172,20 +183,26 @@ const ZONES = [
 
 // ===== ХАРИТА ЎЛЧАМЛАРИ =====
 const MAP_SIZES = {
+    '150':   { cols:150,   rows:150,   name:'Жуда кичик' },
     '200':   { cols:200,   rows:200,   name:'Кичик' },
-    '500':   { cols:500,   rows:500,   name:'Ўрта' },
-    '1000':  { cols:1000,  rows:1000,  name:'Катта' },
-    '5000':  { cols:5000,  rows:5000,  name:'Дунё' }
+    '300':   { cols:300,   rows:300,   name:'Ўрта' },
+    '400':   { cols:400,   rows:400,   name:'Ўрта+' },
+    '500':   { cols:500,   rows:500,   name:'Катта' },
+    '600':   { cols:600,   rows:600,   name:'Катта+' },
+    '800':   { cols:800,   rows:800,   name:'Жуда катта' },
+    '1000':  { cols:1000,  rows:1000,  name:'Улкан' },
+    '1500':  { cols:1500,  rows:1500,  name:'Дунё' },
+    '5000':  { cols:5000,  rows:5000,  name:'Чексиз' }
 };
 
 // ===== ГЛОБАЛ ҲОЛАТ =====
 const GameState = {
     user: null,
-    mode: null,         // Танланган режим
-    settings: { bots:3, gameTime:180, mapSize:500 }
+    mode: null,
+    settings: { bots:3, gameTime:180, mapSize:300 }
 };
 
 console.log('✅ config.js юкланди');
 console.log('  🎮 Режимлар:', GAME_MODES.length);
 console.log('  📦 Овқат турлари:', Object.keys(FOOD_TYPES).length);
-
+console.log('  🗺️ Карталар кичрайтирилди, овқатлар кўпайтирилди');

@@ -107,6 +107,7 @@ const Game = {
         this.worldCols = mapCfg.cols;
         this.worldRows = mapCfg.rows;
         this.food = new FoodManager(this.worldCols, this.worldRows);
+        // Овқат сони режимга қараб кейинроқ
 
         // Экранни кўрсатиб, кейин мослаш
         this.showGameAndResize();
@@ -211,7 +212,10 @@ const Game = {
             this.bots.push(new BotController(b, this, 'medium'));
         }
 
-        this.food.spawn(CONFIG.FOOD_INITIAL);
+        // Овқат сони режимга қараб
+        const foodCount = this.mode?.foodCount || CONFIG.FOOD_INITIAL;
+        this.food.spawn(foodCount);
+        console.log('🍎 Овқатлар:', foodCount, '| Карта:', this.worldCols + 'x' + this.worldRows);
         this.camera.x = this.snake.getHead().x - (this.canvas.width / CONFIG.GRID) / 2;
         this.camera.y = this.snake.getHead().y - (this.canvas.height / CONFIG.GRID) / 2;
         this.render();
@@ -407,6 +411,7 @@ Game.startGroup = function(groupId) {
     this.worldCols = mapCfg.cols;
     this.worldRows = mapCfg.rows;
     this.food = new FoodManager(this.worldCols, this.worldRows);
+        // Овқат сони режимга қараб кейинроқ
 
     showScreen('gameScreen');
     setTimeout(() => this.resizeCanvas(), 50);
@@ -453,6 +458,7 @@ Game.startMode = function(mode) {
 
     // Овқат
     this.food = new FoodManager(this.worldCols, this.worldRows);
+        // Овқат сони режимга қараб кейинроқ
 
     // Экранни кўрсатиш
     showScreen('gameScreen');
@@ -495,6 +501,7 @@ Game.startWorld = function(session, remainingTime) {
 
     // Овқат
     this.food = new FoodManager(this.worldCols, this.worldRows);
+        // Овқат сони режимга қараб кейинроқ
 
     // Экранни кўрсатиш
     showScreen('gameScreen');
@@ -535,3 +542,41 @@ console.log('✅ game.js startWorld қўшилди');
 
 
 
+
+// ===== БОТЛАР КУБОК ЙИҒИШИ =====
+// Ҳар ўйин тугагач, ҳар бот кубок олади/йўқотади
+Game.updateBotTrophies = function() {
+    // Ҳар ботнинг баллига қараб кубок
+    const players = this.snakes.map(s => ({
+        id: s.id,
+        name: s.name,
+        score: s.isPlayer ? this.score : (s.score || 0),
+        isBot: !s.isPlayer
+    }));
+
+    // Σ = 0 формула
+    const changes = Trophies.calculateChanges(players);
+
+    // Ҳар ботга кубок
+    players.forEach(p => {
+        if (p.isBot) {
+            const change = changes[p.id] || 0;
+            // Бот кубокини сақлаш (localStorage ёки Firebase)
+            const botRef = 'cobraco_bot_trophy_' + p.id;
+            const current = parseInt(localStorage.getItem(botRef) || '0');
+            const newTotal = Math.max(0, current + change);
+            localStorage.setItem(botRef, String(newTotal));
+        }
+    });
+};
+
+// gameOver да бот кубокларини янгилаш
+const _originalGameOverBots = Game.gameOver;
+Game.gameOver = async function(reason) {
+    if (this.updateBotTrophies) {
+        this.updateBotTrophies();
+    }
+    return _originalGameOverBots.call(this, reason);
+};
+
+console.log('✅ game.js бот кубоклари қўшилди');
