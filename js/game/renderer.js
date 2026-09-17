@@ -212,3 +212,37 @@ class Renderer {
 }
 
 console.log('✅ renderer.js юкланди (кўзлар + оёқчалар)');
+
+// ===== ТУН РЕЖИМИ УЧУН ҚЎШИМЧА =====
+const _originalClearNight = Renderer.prototype.clear;
+Renderer.prototype.clear = function() {
+    _originalClearNight.call(this);
+    // Тун режимида қўшимча қоронғулик қатлами
+    if (typeof Game !== 'undefined' && Game.nightMode) {
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Ўйинчи атрофида ёруғлик доираси
+        if (Game.snake && Game.snake.alive) {
+            const cam = this.camera;
+            const head = Game.snake.getHead();
+            const p = cam.worldToScreen(head.x, head.y);
+            const cx = p.x + this.grid / 2;
+            const cy = p.y + this.grid / 2;
+            const radius = 150;
+
+            // Радиал градиент
+            const gradient = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.5)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.9)');
+
+            this.ctx.globalCompositeOperation = 'destination-out';
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+};

@@ -97,6 +97,71 @@ const GAME_MODES = [
         worldCycle: 0,
         minPlayers: 2,
         maxPlayers: 20
+    }    ,
+    {
+        id: 'zombie',
+        name: 'Зомби',
+        emoji: '🧟',
+        desc: '50+ секин бот, ҳаммаси ҳужум қилади',
+        color: '#84cc16',
+        mapSize: 1000,
+        bots: 50,
+        gameTime: 300,
+        respawns: 1,
+        worldCycle: 0,
+        special: 'zombie'
+    },
+    {
+        id: 'hunger',
+        name: 'Очлик ўйини',
+        emoji: '🍽️',
+        desc: '24 ўйинчи, 1 ғолиб, карта кичраяди',
+        color: '#f97316',
+        mapSize: 1000,
+        bots: 20,
+        gameTime: 300,
+        respawns: 1,
+        worldCycle: 0,
+        special: 'hunger'
+    },
+    {
+        id: 'hunt',
+        name: 'Ов',
+        emoji: '🎯',
+        desc: 'Сиз катта илон, 20 кичик ов',
+        color: '#ec4899',
+        mapSize: 1000,
+        bots: 20,
+        gameTime: 300,
+        respawns: 1,
+        worldCycle: 0,
+        special: 'hunt'
+    },
+    {
+        id: 'speed',
+        name: 'Тезлик',
+        emoji: '⚡',
+        desc: '2х тезлик, кичик карта, 300 овқат',
+        color: '#fbbf24',
+        mapSize: 200,
+        bots: 5,
+        gameTime: 120,
+        respawns: 3,
+        worldCycle: 0,
+        special: 'speed'
+    },
+    {
+        id: 'night',
+        name: 'Тун',
+        emoji: '🌙',
+        desc: 'Қоронғу, фақат яқин атроф кўринади',
+        color: '#a855f7',
+        mapSize: 1000,
+        bots: 10,
+        gameTime: 300,
+        respawns: 3,
+        worldCycle: 0,
+        special: 'night'
     }
 ];
 
@@ -123,3 +188,4 @@ const GameState = {
 console.log('✅ config.js юкланди');
 console.log('  🎮 Режимлар:', GAME_MODES.length);
 console.log('  📦 Овқат турлари:', Object.keys(FOOD_TYPES).length);
+

@@ -529,3 +529,4 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js startWorld қўшилди');
+
