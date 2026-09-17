@@ -380,6 +380,8 @@ const Game = {
         this.snakes.forEach(s => { if (!s.isPlayer) this.renderer.drawSnake(s); });
         if (this.snake.alive) this.renderer.drawSnake(this.snake);
         this.renderer.drawMiniMap(this.snakes, this.worldCols, this.worldRows, this.camera);
+        // Джойстик чизиш
+        if (typeof Joystick !== 'undefined') Joystick.render(this.renderer.ctx);
     },
 
     async gameOver(reason) {
@@ -859,6 +861,7 @@ Game.gameOver = async function(reason) {
 };
 
 console.log('✅ game.js динамик карта (тузатилган)');
+
 
 
 

@@ -187,3 +187,14 @@ class Renderer {
 }
 
 console.log('✅ renderer.js юкланди (5 қисмли скин)');
+
+// ===== ДЖОЙСТИК ЧИЗИШ (renderer.js га қўшимча) =====
+const _originalDrawMiniMap = Renderer.prototype.drawMiniMap;
+Renderer.prototype.drawMiniMap = function(snakes, cols, rows, cam) {
+    _originalDrawMiniMap.call(this, snakes, cols, rows, cam);
+
+    // Джойстикни чизиш
+    if (typeof Joystick !== 'undefined') {
+        Joystick.render(this.ctx);
+    }
+};

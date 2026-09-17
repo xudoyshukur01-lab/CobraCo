@@ -111,3 +111,44 @@
 .top5-item.bot .top5-score {
     color: #c4b5fd;
 }
+
+/* ===== ТЕЛЕФОНДА — тўлиқ экран + джойстик ===== */
+@media (hover: none) and (pointer: coarse) {
+    /* Эски controls яшириш */
+    .controls { display: none !important; }
+
+    /* gameScreen тўлиқ экран */
+    #gameScreen {
+        padding: 0 !important;
+    }
+
+    /* Canvas тўлиқ экран */
+    .canvas-wrap {
+        flex: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    #gameCanvas {
+        border-radius: 0 !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+
+    /* Header прозрачный */
+    .game-header {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 100 !important;
+        background: linear-gradient(180deg, rgba(15,23,42,0.8) 0%, transparent 100%) !important;
+        padding: 10px !important;
+        pointer-events: none !important;
+    }
+
+    .game-header > * {
+        pointer-events: auto !important;
+    }
+}
