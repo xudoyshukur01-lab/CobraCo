@@ -10,6 +10,7 @@ function showScreen(id) {
 window.addEventListener('DOMContentLoaded', async () => {
     // 1. Firebase
     FirebaseDB.init();
+    if (typeof RealtimeDB !== 'undefined') RealtimeDB.init();
 
     // 2. Telegram
     const user = TelegramAuth.init();
@@ -87,6 +88,7 @@ function showUserRegion() {
     const flag = Regions.getCountryFlag(region.countryCode);
     el.innerHTML = `${flag} ${region.region}`;
 }
+
 
 
 

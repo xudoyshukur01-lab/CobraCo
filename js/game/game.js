@@ -465,3 +465,67 @@ Game.startMode = function(mode) {
 };
 
 console.log('✅ game.js startMode қўшилди');
+
+// ===== ДУНЁ РЕЖИМИ ЎЙИНИ =====
+Game.startWorld = function(session, remainingTime) {
+    console.log('🌍 Дунё ўйини старт:', session.id, '| Вақт:', remainingTime);
+
+    this.mode = GAME_MODES.find(m => m.id === 'world') || GAME_MODES[1];
+    this.session = session;
+    this.isWorldMode = true;
+
+    // Карта
+    const mapCfg = MAP_SIZES[String(this.mode.mapSize)] || MAP_SIZES['5000'];
+    this.worldCols = mapCfg.cols;
+    this.worldRows = mapCfg.rows;
+
+    // Ўйин вақти
+    this.timeLeft = remainingTime;
+    GameState.settings.gameTime = remainingTime;
+
+    // Ботлар сони — динамик
+    const playerCount = session.players ? Object.keys(session.players).length : 1;
+    const botCount = WorldMode.calculateBots(playerCount);
+    GameState.settings.bots = botCount;
+
+    console.log('🌍 Ўйинчилар:', playerCount, '| Ботлар:', botCount, '| Карта:', this.worldCols + 'x' + this.worldRows);
+
+    // Овқат
+    this.food = new FoodManager(this.worldCols, this.worldRows);
+
+    // Экранни кўрсатиш
+    showScreen('gameScreen');
+    setTimeout(() => this.resizeCanvas(), 50);
+    setTimeout(() => this.resizeCanvas(), 300);
+
+    // Ўйинни тайёрлаш
+    this.prepare();
+    this.loadTop5();
+
+    // Реал-тайм sync
+    if (RealtimeDB.isReady && session.id && !session.id.startsWith('local_')) {
+        this.worldUpdateInterval = setInterval(() => {
+            if (this.score > 0 && this.snake) {
+                RealtimeDB.updateScore(session.id, TelegramAuth.user.id, this.score);
+            }
+        }, 5000);
+    }
+};
+
+// ===== Дунё режимида ўйин тугаганда =====
+const _originalGameOverWorld = Game.gameOver;
+Game.gameOver = async function(reason) {
+    if (this.worldUpdateInterval) {
+        clearInterval(this.worldUpdateInterval);
+        this.worldUpdateInterval = null;
+    }
+
+    // Реал-таймга якуний балл юбориш
+    if (this.isWorldMode && this.session && RealtimeDB.isReady && TelegramAuth.user) {
+        await RealtimeDB.updateScore(this.session.id, TelegramAuth.user.id, this.score);
+    }
+
+    return _originalGameOverWorld.call(this, reason);
+};
+
+console.log('✅ game.js startWorld қўшилди');
